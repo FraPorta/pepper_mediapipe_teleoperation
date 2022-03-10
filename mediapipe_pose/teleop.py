@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Attribution: Part of this code is based on 
+Taken and modified from
+https://github.com/elggem/naoqi-pose-retargeting
+(Apache 2.0 Licensed)
+Part of this code is based on 
 https://github.com/Kazuhito00/mediapipe-python-sample/blob/main/sample_pose.py
 (Apache 2.0 Licensed)
 """

@@ -1,9 +1,3 @@
-"""
-Taken and modified from
-https://github.com/FraPorta/pepper_openpose_teleoperation
-License: Apache 2.0
-"""
-
 import sys
 import numpy as np
 import math

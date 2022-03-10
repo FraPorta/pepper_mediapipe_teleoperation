@@ -26,20 +26,19 @@ mp_pose = mp.solutions.pose
 from utils import CvFpsCalc
 from utils import KeypointsToAngles
 from utils import SocketSend
-from utils import HandsUtils
 from utils import SocketReceiveSignal
 from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
 
 keypointsToAngles = KeypointsToAngles()
-hu = HandsUtils()
+
 angle_trace = []
 
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=640)
-    parser.add_argument("--height", help='cap height', type=int, default=480)
+    parser.add_argument("--width", help='cap width', type=int, default=1280)
+    parser.add_argument("--height", help='cap height', type=int, default=720)
 
     parser.add_argument("--video", type=str, default="")
     parser.add_argument("--fps", type=int, default=10)
@@ -144,7 +143,7 @@ def do_teleop(landmarks):
         return True
 
 def main():
-    global angle_trace
+    # global angle_trace
 
     args = get_args()
 
@@ -171,15 +170,12 @@ def main():
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
-    mp_pose = mp.solutions.pose
-    mp_hands = mp.solutions.hands
-    pose = mp_pose.Pose(
+    mp_holistic = mp.solutions.holistic
+    pose = mp_holistic.Holistic(
         model_complexity=model_complexity,
-        enable_segmentation=False,
         min_detection_confidence=min_detection_confidence,
         min_tracking_confidence=min_tracking_confidence,
     )
-    hands = mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) 
 
     if enable_teleop:
         # Initialize socket to send keypoints
@@ -201,48 +197,28 @@ def main():
         ret, image = cap.read()
         if not ret:
             break
-        image = cv.flip(image, 1)
+        # image = cv.flip(image, 1)
         debug_image = copy.deepcopy(image)
         
         # To improve performance, optionally mark the image as not writeable to pass by reference.
         image.flags.writeable = False
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         results = pose.process(image)
-        results_hands = hands.process(image)
 
-        image.flags.writeable = True
-        
-        # Draw pose landmarks
         if results.pose_landmarks is not None:
-            mp_drawing.draw_landmarks(
-                debug_image,
-                results.pose_landmarks,
-                mp_pose.POSE_CONNECTIONS,
-                mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
-                mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),)
+            image.flags.writeable = True
+            # image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+            # mp_drawing.draw_landmarks(
+            #     image,
+            #     results.pose_landmarks,
+            #     mp_pose.POSE_CONNECTIONS,
+            #     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+            #  # Flip the image horizontally for a selfie-view display.
+            # cv.imshow('MediaPipe Pose', cv.flip(image, 1))
             # brect = calc_bounding_rect(debug_image, results.pose_landmarks)
-            # debug_image = draw_landmarks(debug_image, results.pose_landmarks)
-            # Rendering results
+            debug_image = draw_landmarks(debug_image, results.pose_landmarks)
             # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-        
-        # Draw hands landmarks
-        hand_rl = None
-        if results_hands.multi_hand_landmarks:
-            for num, hand in enumerate(results_hands.multi_hand_landmarks):
-                mp_drawing.draw_landmarks(debug_image,
-                                        hand,
-                                        mp_hands.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
-                                        )
-                # Render left or right detection
-                if hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height):
-                    text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
-                    cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
-            
-                # Draw angles to image from joint list
-                # draw_finger_angles(image, results, joint_list_low)
-                hu.draw_finger_angles_3d(debug_image, hand, hu.joint_list_low, hand_rl, cap_width, cap_height)
+            mp_drawing.plot_landmarks(results.pose_world_landmarks, mp_holistic.POSE_CONNECTIONS)
         
         if plot_world_landmark:
             if results.pose_world_landmarks is not None:

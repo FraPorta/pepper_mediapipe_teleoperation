@@ -38,7 +38,6 @@ dark_blue = (41, 82, 148)
 orange = (224, 109, 63)
 dark_orange = (158, 77, 44)
 
-
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -72,7 +71,7 @@ def get_args():
     return args
 
 
-def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed):
+def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened):
     p = []
     for index, landmark in enumerate(landmarks.landmark):
         p.append([landmark.x, landmark.y, landmark.z])
@@ -97,7 +96,9 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed):
     wp_dict['8'] = pMidHip # MidHip
     wp_dict['9'] = rHand_closed
     wp_dict['10'] = lHand_closed
-
+    wp_dict['11'] = rHand_opened
+    wp_dict['12'] = lHand_opened
+ 
     # print(wp_dict)
     ss.send(wp_dict)
 
@@ -197,8 +198,11 @@ def main():
         ax = fig.add_subplot(111, projection="3d")
         fig.subplots_adjust(left=0.0, right=1, bottom=0, top=1)
 
+    # Init hands state
     rHand_closed = False
     lHand_closed = False
+    rHand_opened = False
+    lHand_opened = False
     
     while True:
         start = time()
@@ -249,7 +253,7 @@ def main():
             # if text is not None:
             #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
             # Draw angles to image from joint list
-            rHand_closed = hu.draw_finger_angles_3d(debug_image,
+            rHand_closed, rHand_opened = hu.draw_finger_angles_3d(debug_image,
                                      results.right_hand_landmarks,
                                      hu.joint_list_low,
                                      handedness,
@@ -273,7 +277,7 @@ def main():
             # if text is not None:
             #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
             # Draw angles to image from joint list
-            lHand_closed = hu.draw_finger_angles_3d(debug_image,
+            lHand_closed, lHand_opened = hu.draw_finger_angles_3d(debug_image,
                                      results.left_hand_landmarks,
                                      hu.joint_list_low,
                                      handedness,
@@ -293,7 +297,7 @@ def main():
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
 
             if enable_teleop:
-                socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed)
+                socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened)
 
         cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 145, 255), 2, cv.LINE_AA)

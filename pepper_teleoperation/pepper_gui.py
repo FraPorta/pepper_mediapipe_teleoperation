@@ -29,6 +29,7 @@ class PepperGui:
         self.session = session
         
         self.teleop = tk.IntVar(value=1)
+        self.save_data = tk.IntVar(value=1)
         self.approach = tk.IntVar()
         
         # Instantiate queue and class for speech recognition
@@ -194,6 +195,7 @@ class PepperGui:
         self.lbl_conn.configure(text="Press the button or say 'connect'")
         
         # CheckBoxes
+        y=145
         y=160
         self.c_approach = tk.Checkbutton(self.master,
                                          text = "Search User",
@@ -211,9 +213,28 @@ class PepperGui:
                                          activeforeground='white')
         self.c_approach.place(x=80, y=y)
         
-        self.c_teleop = tk.Checkbutton(self.master,
-                                       text = "Teleoperate",
-                                       variable = self.teleop,
+        # self.c_teleop = tk.Checkbutton(self.master,
+        #                                text = "Teleoperate",
+        #                                variable = self.teleop,
+        #                                onvalue = 1, 
+        #                                offvalue = 0,
+        #                                font=(font,12), 
+        #                                bg=red,
+        #                                fg='white',
+        #                                selectcolor=light_red,
+        #                                activebackground=light_red,
+        #                                activeforeground='white',
+        #                                disabledforeground='white',
+        #                                highlightthickness=0,
+        #                                bd=0,
+        #                                relief=tk.FLAT,
+        #                                indicatoron=True,
+        #                                state=tk.DISABLED)
+        # self.c_teleop.place(x=80, y=y+30)
+        
+        self.c_save = tk.Checkbutton(self.master,
+                                       text = "Save data",
+                                       variable = self.save_data,
                                        onvalue = 1, 
                                        offvalue = 0,
                                        font=(font,12), 
@@ -227,8 +248,9 @@ class PepperGui:
                                        bd=0,
                                        relief=tk.FLAT,
                                        indicatoron=True,
-                                       state=tk.DISABLED)
-        self.c_teleop.place(x=80, y=y+30)
+                                    #    state=tk.DISABLED
+                                       )
+        self.c_save.place(x=80, y=y+30)
         
         # Entries
         self.text_ip = tk.Entry(self.master,
@@ -312,7 +334,7 @@ class PepperGui:
     # 
     #  Start Pepper approach/teleoperation
     def start_pepper(self):
-        show_plot = True
+        show_plot = self.save_data.get()
         gif_path = 'GUI_material/load_white.gif'
         
         if self.approach.get() == 1 and self.teleop.get() == 1:

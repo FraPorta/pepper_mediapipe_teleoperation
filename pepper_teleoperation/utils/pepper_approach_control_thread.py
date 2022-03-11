@@ -356,8 +356,8 @@ class PepperApproachControl(Thread):
         timestamp_arr_start = []
         timestamp_arr_end = []
         
-        rHand_arr = []
-        lHand_arr = []
+        # rHand_arr = []
+        # lHand_arr = []
         
         # Initialize time counter
         t1 = time.time()
@@ -403,11 +403,12 @@ class PepperApproachControl(Thread):
                 # Get keypoints from OpenPose
                 wp_dict = KtA.get_keypoints()  
                 
-                rHand_arr.append(wp_dict.get('9'))
-                rHand_arr.append(wp_dict.get('10'))
+                # rHand_arr.append(wp_dict.get('9'))
+                # rHand_arr.append(wp_dict.get('10'))
                 
-                # Save received keypoints
-                self.store_keypoints(wp_dict, path)
+                if self.show_plot:
+                    #    Save received keypoints
+                    self.store_keypoints(wp_dict, path)
                 
                 # Get angles from keypoints
                 self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
@@ -471,8 +472,11 @@ class PepperApproachControl(Thread):
                     HP_arr_filt.append(self.HipPitch[0])
                 
                 # Get hands state 
-                rClosed, lClosed = self.define_hands_state(rHand_arr, lHand_arr)
-                
+                # rClosed, lClosed = self.define_hands_state(rHand_arr, lHand_arr)
+                RHand_close = wp_dict.get('9')
+                RHand_open = wp_dict.get('11')
+                LHand_close = wp_dict.get('10')
+                LHand_open = wp_dict.get('12')
                 ### Pepper joints control ###
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
@@ -483,15 +487,20 @@ class PepperApproachControl(Thread):
                     motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
                 # if rClosed:
-                if wp_dict.get('9'):
+                if RHand_close:
                     motion_service.setAngles('RHand', 0.0, fractionMaxSpeed_h)
+                elif RHand_open:
+                    motion_service.setAngles('RHand', 0.9, fractionMaxSpeed_h)
                 else:
                     motion_service.setAngles('RHand', 0.6, fractionMaxSpeed_h)
                 # if lClosed:
-                if wp_dict.get('10'):
+                if LHand_close:
                     motion_service.setAngles('LHand', 0.0, fractionMaxSpeed_h)
+                elif LHand_open:
+                    motion_service.setAngles('LHand', 0.9, fractionMaxSpeed_h)
                 else:
                     motion_service.setAngles('LHand', 0.6, fractionMaxSpeed_h)
+                
                 # Mantain right wrist horizontal w. r. t. ground
                 # motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
                 

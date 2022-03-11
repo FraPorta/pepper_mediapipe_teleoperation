@@ -66,7 +66,9 @@ class HandsUtils(object):
     def draw_finger_angles_3d(self, image, hand, joint_list, rl, width, height):
         # Loop through hands
         fingers_closed = []
+        fingers_opened = []
         hand_closed = False
+        hand_opened = False
         
         for joint in joint_list:
             a = np.array([hand.landmark[joint[0]].x, hand.landmark[joint[0]].y, hand.landmark[joint[0]].z]) # First coord
@@ -80,6 +82,8 @@ class HandsUtils(object):
             
             if angle < 120.0:
                 fingers_closed.append(1)
+            if angle > 172.0:
+                fingers_opened.append(1)
                 
             cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
@@ -92,7 +96,17 @@ class HandsUtils(object):
             else:
                 cv2.putText(image, rl + " closed", (width-100, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
-        return hand_closed
+        
+        if len(fingers_opened) > 2:
+            hand_opened = True
+            if rl == 'Right':
+                cv2.putText(image, rl + " opened", (width-100, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            else:
+                cv2.putText(image, rl + " opened", (width-100, 80),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+                
+        return hand_closed, hand_opened
 
 
 # if __name__ == "__main__":

@@ -15,23 +15,36 @@ class HandsUtils(object):
         self.joint_list_low = [[7,6,5], [11,10,9], [15,14,13], [19,18,17], [3,2,1]]
 
     def get_label(self, index, hand, multi_handedness, width, height):
-        output = None
-        
-        for classification in multi_handedness:
-            print(multi_handedness)
-            if classification.classification[0].index == index:
-                
-                # Process results
-                label = classification.classification[0].label
-                score = classification.classification[0].score
-                text = '{} {}'.format(label, round(score, 2))
-                
-                # Extract Coordinates
-                coords = tuple(np.multiply(
-                    np.array((hand.landmark[mp_hands.HandLandmark.WRIST].x, hand.landmark[mp_hands.HandLandmark.WRIST].y)),
-                [width,height]).astype(int))
-                
-                output = text, coords, label
+        output = None, None, None
+        # print(len(multi_handedness))
+        if len(multi_handedness) == 1:
+            label = multi_handedness[0].classification[0].label
+            score = multi_handedness[0].classification[0].score
+            text = '{} {}'.format(label, round(score, 2))
+            
+            # Extract Coordinates
+            coords = tuple(np.multiply(
+                np.array((hand.landmark[mp_hands.HandLandmark.WRIST].x, hand.landmark[mp_hands.HandLandmark.WRIST].y)),
+            [width,height]).astype(int))
+            
+            output = text, coords, label
+        else:
+            for classification in multi_handedness:
+                # print(multi_handedness)
+                if classification.classification[0].index == index:
+                    # print(multi_handedness)
+                    # print(index, classification.classification[0].label, classification.classification[0].index)
+                    # Process results
+                    label = classification.classification[0].label
+                    score = classification.classification[0].score
+                    text = '{} {}'.format(label, round(score, 2))
+                    
+                    # Extract Coordinates
+                    coords = tuple(np.multiply(
+                        np.array((hand.landmark[mp_hands.HandLandmark.WRIST].x, hand.landmark[mp_hands.HandLandmark.WRIST].y)),
+                    [width,height]).astype(int))
+                    
+                    output = text, coords, label
                 
         return output
 
@@ -65,13 +78,13 @@ class HandsUtils(object):
             if angle > 180.0:
                 angle = 360-angle
             
-            if angle < 100.0:
+            if angle < 120.0:
                 fingers_closed.append(1)
                 
             cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         
-        if len(fingers_closed) > 3:
+        if len(fingers_closed) > 2:
             hand_closed = True
             if rl == 'Right':
                 cv2.putText(image, rl + " closed", (width-100, 20),
@@ -82,100 +95,97 @@ class HandsUtils(object):
         return hand_closed
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
-    cap = cv2.VideoCapture(0)
-    width= 640
-    height = 480
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-    hu = HandsUtils()
+#     cap = cv2.VideoCapture(0)
+#     width= 640
+#     height = 480
+#     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+#     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+#     hu = HandsUtils()
 
-    with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands: 
-        while cap.isOpened():
-            ret, frame = cap.read()
+#     with mp_hands.Hands(min_detection_confidence=0.8, min_tracking_confidence=0.5) as hands: 
+#         while cap.isOpened():
+#             ret, frame = cap.read()
             
-            # BGR 2 RGB
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#             # BGR 2 RGB
+#             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
-            # Flip on horizontal
-            image = cv2.flip(image, 1)
+#             # Flip on horizontal
+#             image = cv2.flip(image, 1)
             
-            # Set flag
-            image.flags.writeable = False
+#             # Set flag
+#             image.flags.writeable = False
             
-            # Detections
-            results = hands.process(image)
+#             # Detections
+#             results = hands.process(image)
             
-            # Set flag to true
-            image.flags.writeable = True
+#             # Set flag to true
+#             image.flags.writeable = True
             
-            # RGB 2 BGR
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+#             # RGB 2 BGR
+#             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             
-            # Detections
-            # print(results)
-            hand_rl = None
-            # Rendering results
-            if results.multi_hand_landmarks:
-                for num, hand in enumerate(results.multi_hand_landmarks):
-                    mp_drawing.draw_landmarks(image,
-                                              hand,
-                                              mp_hands.HAND_CONNECTIONS, 
-                                              mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
-                                              mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
-                                             )
+#             # Detections
+#             # print(results)
+#             hand_rl = None
+#             # Rendering results
+#             if results.multi_hand_landmarks:
+#                 for num, hand in enumerate(results.multi_hand_landmarks):
+#                     mp_drawing.draw_landmarks(image,
+#                                               hand,
+#                                               mp_hands.HAND_CONNECTIONS, 
+#                                               mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
+#                                               mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
+#                                              )
                     
-                    
-                    # Render left or right detection
-                    # FIND ANOTHER WAY FOR THE IF
-                    if hu.get_label(num, hand, results.multi_handedness, width, height):
-                        text, coord, hand_rl = hu.get_label(num, hand, results.multi_handedness, width, height)
-                        cv2.putText(image, text, coord, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+#                     # Render left or right detection
+#                     text, coord, hand_rl = hu.get_label(num, hand, results.multi_handedness, width, height)
+#                     if text is not None:
+#                         cv2.putText(image, text, coord, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
                 
-                    # Draw angles to image from joint list
-                    # draw_finger_angles(image, results, joint_list_low)
-                    if hand_rl is not None:
-                        hu.draw_finger_angles_3d(image, hand, hu.joint_list_low, hand_rl, width, height)
+#                     # Draw angles to image from joint list
+#                     if hand_rl is not None:
+#                         hu.draw_finger_angles_3d(image, hand, hu.joint_list_low, hand_rl, width, height)
               
-            # Save our image    
-            #cv2.imwrite(os.path.join('Output Images', '{}.jpg'.format(uuid.uuid1())), image)
-            cv2.imshow('Hands Tracking', image)
+#             # Save our image    
+#             #cv2.imwrite(os.path.join('Output Images', '{}.jpg'.format(uuid.uuid1())), image)
+#             cv2.imshow('Hands Tracking', image)
 
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
+#             if cv2.waitKey(10) & 0xFF == ord('q'):
+#                 break
 
-    cap.release()
-    cv2.destroyAllWindows()
+#     cap.release()
+#     cv2.destroyAllWindows()
 
-'''
-def draw_finger_angles(image, results, joint_list):
-    # Loop through hands
-    fingers_closed = []
-    hand_closed = False
-    for hand in results.multi_hand_landmarks:
-        #Loop through joint sets 
-        for joint in joint_list:
-            a = np.array([hand.landmark[joint[0]].x, hand.landmark[joint[0]].y]) # First coord
-            b = np.array([hand.landmark[joint[1]].x, hand.landmark[joint[1]].y]) # Second coord
-            c = np.array([hand.landmark[joint[2]].x, hand.landmark[joint[2]].y]) # Third coord
+# '''
+# def draw_finger_angles(image, results, joint_list):
+#     # Loop through hands
+#     fingers_closed = []
+#     hand_closed = False
+#     for hand in results.multi_hand_landmarks:
+#         #Loop through joint sets 
+#         for joint in joint_list:
+#             a = np.array([hand.landmark[joint[0]].x, hand.landmark[joint[0]].y]) # First coord
+#             b = np.array([hand.landmark[joint[1]].x, hand.landmark[joint[1]].y]) # Second coord
+#             c = np.array([hand.landmark[joint[2]].x, hand.landmark[joint[2]].y]) # Third coord
             
-            radians = np.arctan2(c[1] - b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-            angle = np.abs(radians*180.0/np.pi)
+#             radians = np.arctan2(c[1] - b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+#             angle = np.abs(radians*180.0/np.pi)
             
-            if angle > 180.0:
-                angle = 360-angle
+#             if angle > 180.0:
+#                 angle = 360-angle
             
-            if angle < 60.0:
-                fingers_closed.append(1)
+#             if angle < 60.0:
+#                 fingers_closed.append(1)
 
-            cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b, [640, 480]).astype(int)),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+#             cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b, [640, 480]).astype(int)),
+#                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
     
-    if len(fingers_closed) > 3:
-        hand_closed = True
-        cv2.putText(image, "Closed", (10, 10),
-                      cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+#     if len(fingers_closed) > 3:
+#         hand_closed = True
+#         cv2.putText(image, "Closed", (10, 10),
+#                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         
-    return hand_closed
-'''
+#     return hand_closed
+# '''

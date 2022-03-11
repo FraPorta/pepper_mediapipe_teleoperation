@@ -1,9 +1,12 @@
 import cv2
 import mediapipe as mp
+from utils import HandsUtils
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_holistic = mp.solutions.holistic
 
+hu = HandsUtils()
 
 # For webcam input:
 cap = cv2.VideoCapture(0)
@@ -23,6 +26,7 @@ with mp_holistic.Holistic(
     # pass by reference.
     image.flags.writeable = False
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
     results = holistic.process(image)
 
     # Draw landmark annotation on the image.
@@ -42,17 +46,13 @@ with mp_holistic.Holistic(
     #     landmark_drawing_spec=mp_drawing_styles
     #     .get_default_pose_landmarks_style())
     
-    if results.left_hand_landmarks:
-        left = True
-    mp_drawing.draw_landmarks(
-        image,
-        results.left_hand_landmarks,
-        mp_holistic.HAND_CONNECTIONS,
-        landmark_drawing_spec=mp_drawing_styles
-        .get_default_pose_landmarks_style())
+    # mp_drawing.draw_landmarks(
+    #     image,
+    #     results.left_hand_landmarks,
+    #     mp_holistic.HAND_CONNECTIONS,
+    #     landmark_drawing_spec=mp_drawing_styles
+    #     .get_default_pose_landmarks_style())
         
-    if results.left_hand_landmarks:
-        right = True
     mp_drawing.draw_landmarks(
         image,
         results.right_hand_landmarks,
@@ -61,10 +61,7 @@ with mp_holistic.Holistic(
         .get_default_pose_landmarks_style())
     
     image = cv2.flip(image, 1)
-    if left:
-        cv2.putText(image, "Left_hand", (10,10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
-    if right:
-        cv2.putText(image, "Right_hand", (10,40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2, cv2.LINE_AA)
+   
     # Flip the image horizontally for a selfie-view display.
     cv2.imshow('MediaPipe Holistic', image)
     if cv2.waitKey(5) & 0xFF == 27:

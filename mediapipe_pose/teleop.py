@@ -236,13 +236,13 @@ def main():
                                         mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
                                         )
                 # Render left or right detection
-                if hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height):
-                    text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
+                text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
+                if text is not None:
                     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
             
                 # Draw angles to image from joint list
-                # draw_finger_angles(image, results, joint_list_low)
-                hu.draw_finger_angles_3d(debug_image, hand, hu.joint_list_low, hand_rl, cap_width, cap_height)
+                if hand_rl is not None:
+                    hu.draw_finger_angles_3d(debug_image, hand, hu.joint_list_low, hand_rl, cap_width, cap_height)
         
         if plot_world_landmark:
             if results.pose_world_landmarks is not None:

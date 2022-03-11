@@ -178,49 +178,6 @@ class PepperApproachControl(Thread):
         elif HP > 1.0385:
             self.HipPitch = 1.0385
         
-    ##  function plot_data
-    #
-    #   Plot raw and filtered angles at the end of the session
-    def plot_data(self, axs, raw_data, filt_data, robot_data, name, time_elapsed, pos_x, pos_y, plot_PS=False):
-        # Plot time signals (Raw and filtered)
-        data = np.array(raw_data)
-        N_samples = len(data)
-        sampling_rate = N_samples/time_elapsed
-        time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-        
-        if len(raw_data) > len(filt_data):
-            filt_data.append(0.0)
-        data_filt = np.array(filt_data)
-        
-        if len(raw_data) > len(robot_data):
-            robot_data.append(0.0)
-        data_robot = np.array(robot_data)
-        
-        '''
-        if plot_PS:
-            # POWER SPECTRUM
-            fourier_transform = np.fft.rfft(data)
-            abs_fourier_transform = np.abs(fourier_transform)
-            power_spectrum = np.square(abs_fourier_transform)
-            frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-            if len(frequency) == len(power_spectrum):
-                axs[0].plot(frequency, power_spectrum)
-                axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-                axs[0].set_title('Power Spectrum')
-        '''
-        
-        if len(time_samples) == len(data):
-            axs[pos_x, pos_y].plot(time_samples, data)
-            axs[pos_x, pos_y].set(xlabel='time [s]', ylabel='Angle [rad]')
-            axs[pos_x, pos_y].set_title('%s angle' % name)
-            
-        if len(time_samples) == len(data_filt):
-            axs[pos_x, pos_y].plot(time_samples, data_filt)
-            # axs[pos_x, pos_y].legend(['signal', 'filtered'])
-        
-        if len(time_samples) == len(data_robot):
-            axs[pos_x, pos_y].plot(time_samples, data_robot)
-            axs[pos_x, pos_y].legend(['signal', 'filtered', 'robot'])
 
     ##  function save_data
     #
@@ -260,6 +217,24 @@ class PepperApproachControl(Thread):
         with open(file,'a') as f: 
             f.write(str(temp_dict))
             f.write("\n")
+    
+    def define_hands_state(self, rHand_arr, lHand_arr):
+        check_length = 2
+        rHand_closed = False
+        lHand_closed = False
+        if rHand_arr:
+            if len(rHand_arr) >= check_length:
+                # check last [check_length] values 
+                if rHand_arr[-check_length:].count(True) == check_length:
+                    rHand_closed = True
+        
+        if lHand_arr:
+            if len(lHand_arr) >= check_length:
+                # check last [check_length] values 
+                if lHand_arr[-check_length:].count(True) == check_length:
+                    lHand_closed = True
+        
+        return rHand_closed, lHand_closed
 
     ##  function joints_control
     #
@@ -381,6 +356,9 @@ class PepperApproachControl(Thread):
         timestamp_arr_start = []
         timestamp_arr_end = []
         
+        rHand_arr = []
+        lHand_arr = []
+        
         # Initialize time counter
         t1 = time.time()
         # self.timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t1))
@@ -392,7 +370,8 @@ class PepperApproachControl(Thread):
                  "HipPitch"]
         
         # Speed limits for the joints
-        fractionMaxSpeed = 0.5
+        fractionMaxSpeed = 0.4
+        fractionMaxSpeed_h = 0.2
 
         print("Start controlling Pepper joints!")
         self.queue_out.put("Start controlling Pepper joints!")
@@ -418,8 +397,14 @@ class PepperApproachControl(Thread):
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
             try:  
+                rClosed = False
+                lClosed = False
+                
                 # Get keypoints from OpenPose
                 wp_dict = KtA.get_keypoints()  
+                
+                rHand_arr.append(wp_dict.get('9'))
+                rHand_arr.append(wp_dict.get('10'))
                 
                 # Save received keypoints
                 self.store_keypoints(wp_dict, path)
@@ -485,6 +470,9 @@ class PepperApproachControl(Thread):
                     
                     HP_arr_filt.append(self.HipPitch[0])
                 
+                # Get hands state 
+                rClosed, lClosed = self.define_hands_state(rHand_arr, lHand_arr)
+                
                 ### Pepper joints control ###
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
@@ -493,9 +481,19 @@ class PepperApproachControl(Thread):
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     motion_service.setAngles(names, angles, fractionMaxSpeed)
-                
+                # Close or open hands
+                # if rClosed:
+                if wp_dict.get('9'):
+                    motion_service.setAngles('RHand', 0.0, fractionMaxSpeed_h)
+                else:
+                    motion_service.setAngles('RHand', 0.6, fractionMaxSpeed_h)
+                # if lClosed:
+                if wp_dict.get('10'):
+                    motion_service.setAngles('LHand', 0.0, fractionMaxSpeed_h)
+                else:
+                    motion_service.setAngles('LHand', 0.6, fractionMaxSpeed_h)
                 # Mantain right wrist horizontal w. r. t. ground
-                motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
+                # motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
                 
                 # Store robot angles lists for plots
                 if self.show_plot:
@@ -607,3 +605,48 @@ if __name__ == "__main__":
     
     pac.join()
     
+    
+    
+    # ##  function plot_data
+    # #
+    # #   Plot raw and filtered angles at the end of the session
+    # def plot_data(self, axs, raw_data, filt_data, robot_data, name, time_elapsed, pos_x, pos_y, plot_PS=False):
+    #     # Plot time signals (Raw and filtered)
+    #     data = np.array(raw_data)
+    #     N_samples = len(data)
+    #     sampling_rate = N_samples/time_elapsed
+    #     time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
+        
+    #     if len(raw_data) > len(filt_data):
+    #         filt_data.append(0.0)
+    #     data_filt = np.array(filt_data)
+        
+    #     if len(raw_data) > len(robot_data):
+    #         robot_data.append(0.0)
+    #     data_robot = np.array(robot_data)
+        
+    #     '''
+    #     if plot_PS:
+    #         # POWER SPECTRUM
+    #         fourier_transform = np.fft.rfft(data)
+    #         abs_fourier_transform = np.abs(fourier_transform)
+    #         power_spectrum = np.square(abs_fourier_transform)
+    #         frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
+    #         if len(frequency) == len(power_spectrum):
+    #             axs[0].plot(frequency, power_spectrum)
+    #             axs[0].set(xlabel='frequency [1/s]', ylabel='power')
+    #             axs[0].set_title('Power Spectrum')
+    #     '''
+        
+    #     if len(time_samples) == len(data):
+    #         axs[pos_x, pos_y].plot(time_samples, data)
+    #         axs[pos_x, pos_y].set(xlabel='time [s]', ylabel='Angle [rad]')
+    #         axs[pos_x, pos_y].set_title('%s angle' % name)
+            
+    #     if len(time_samples) == len(data_filt):
+    #         axs[pos_x, pos_y].plot(time_samples, data_filt)
+    #         # axs[pos_x, pos_y].legend(['signal', 'filtered'])
+        
+    #     if len(time_samples) == len(data_robot):
+    #         axs[pos_x, pos_y].plot(time_samples, data_robot)
+    #         axs[pos_x, pos_y].legend(['signal', 'filtered', 'robot'])

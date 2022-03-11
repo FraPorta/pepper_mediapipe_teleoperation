@@ -26,12 +26,18 @@ mp_pose = mp.solutions.pose
 from utils import CvFpsCalc
 from utils import KeypointsToAngles
 from utils import SocketSend
+from utils import HandsUtils
 from utils import SocketReceiveSignal
 from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
 
 keypointsToAngles = KeypointsToAngles()
+hu = HandsUtils()
 
-angle_trace = []
+blue = (66, 135, 245)
+dark_blue = (41, 82, 148)
+orange = (224, 109, 63)
+dark_orange = (158, 77, 44)
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -66,7 +72,7 @@ def get_args():
     return args
 
 
-def socket_stream_landmarks(ss, landmarks):
+def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed):
     p = []
     for index, landmark in enumerate(landmarks.landmark):
         p.append([landmark.x, landmark.y, landmark.z])
@@ -89,6 +95,8 @@ def socket_stream_landmarks(ss, landmarks):
     wp_dict['7'] = p[16]   # RWrist
     
     wp_dict['8'] = pMidHip # MidHip
+    wp_dict['9'] = rHand_closed
+    wp_dict['10'] = lHand_closed
 
     # print(wp_dict)
     ss.send(wp_dict)
@@ -128,7 +136,7 @@ def do_teleop(landmarks):
     
 
     # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
-    angle_trace.append(angles)
+    # angle_trace.append(angles)
 
     if (checkLim(LShoulderPitch, limitsLShoulderPitch) or 
         checkLim(RShoulderPitch, limitsRShoulderPitch) or
@@ -189,6 +197,9 @@ def main():
         ax = fig.add_subplot(111, projection="3d")
         fig.subplots_adjust(left=0.0, right=1, bottom=0, top=1)
 
+    rHand_closed = False
+    lHand_closed = False
+    
     while True:
         start = time()
 
@@ -204,21 +215,70 @@ def main():
         image.flags.writeable = False
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         results = pose.process(image)
-
+        image.flags.writeable = True
+        
         if results.pose_landmarks is not None:
-            image.flags.writeable = True
-            # image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-            # mp_drawing.draw_landmarks(
-            #     image,
-            #     results.pose_landmarks,
-            #     mp_pose.POSE_CONNECTIONS,
-            #     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-            #  # Flip the image horizontally for a selfie-view display.
-            # cv.imshow('MediaPipe Pose', cv.flip(image, 1))
+            mp_drawing.draw_landmarks(
+                debug_image,
+                results.pose_landmarks,
+                mp_holistic.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+                # mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
+                # mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
             # brect = calc_bounding_rect(debug_image, results.pose_landmarks)
-            debug_image = draw_landmarks(debug_image, results.pose_landmarks)
+            # debug_image = draw_landmarks(debug_image, results.pose_landmarks)
             # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-            mp_drawing.plot_landmarks(results.pose_world_landmarks, mp_holistic.POSE_CONNECTIONS)
+            # mp_drawing.plot_landmarks(results.pose_world_landmarks, mp_holistic.POSE_CONNECTIONS)
+        
+        # Draw hands landmarks
+        if results.right_hand_landmarks:
+            handedness = "Right"
+            # for num, hand in enumerate(results.right_hand_landmarks):
+            mp_drawing.draw_landmarks(debug_image,
+                                        results.right_hand_landmarks,
+                                        mp_holistic.HAND_CONNECTIONS, 
+                                        mp_drawing.DrawingSpec(color=dark_blue,
+                                                                thickness=2,
+                                                                circle_radius=4),
+                                        mp_drawing.DrawingSpec(color=blue,
+                                                                thickness=2,
+                                                                circle_radius=2),
+                                        )
+            # # Render left or right detection
+            # text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
+            # if text is not None:
+            #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+            # Draw angles to image from joint list
+            rHand_closed = hu.draw_finger_angles_3d(debug_image,
+                                     results.right_hand_landmarks,
+                                     hu.joint_list_low,
+                                     handedness,
+                                     cap_width,
+                                     cap_height)
+        
+        if results.left_hand_landmarks:
+            handedness = "Left"
+            # for num, hand in enumerate(results.right_hand_landmarks):
+            mp_drawing.draw_landmarks(debug_image,
+                                        results.left_hand_landmarks,
+                                        mp_holistic.HAND_CONNECTIONS, 
+                                        mp_drawing.DrawingSpec(color=dark_orange,
+                                                                thickness=2,
+                                                                circle_radius=4),
+                                        mp_drawing.DrawingSpec(color=orange,
+                                                                thickness=2,
+                                                                circle_radius=2),)
+            # # Render left or right detection
+            # text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
+            # if text is not None:
+            #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+            # Draw angles to image from joint list
+            lHand_closed = hu.draw_finger_angles_3d(debug_image,
+                                     results.left_hand_landmarks,
+                                     hu.joint_list_low,
+                                     handedness,
+                                     cap_width,
+                                     cap_height)
         
         if plot_world_landmark:
             if results.pose_world_landmarks is not None:
@@ -233,7 +293,7 @@ def main():
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
 
             if enable_teleop:
-                socket_stream_landmarks(ss, results.pose_world_landmarks)
+                socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed)
 
         cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 145, 255), 2, cv.LINE_AA)
@@ -241,7 +301,8 @@ def main():
         key = cv.waitKey(1)
         if key == 27:  # ESC
             break
-
+        
+        image = cv.flip(debug_image, 1)
         cv.imshow('Pepper Teleop', debug_image)
 
         # if (len(video)>0):

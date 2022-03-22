@@ -301,7 +301,7 @@ class KeypointsToAngles:
     def obtain_HipPitch_angles(self, P0_curr, P8_curr):
         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
-
+        # v_0_8_curr = self.vector_from_points(P8_curr, P0_curr)
         # Normals to axis planes
         n_YZ = [1, 0, 0]
         n_XZ = [0, 1, 0]
@@ -328,7 +328,7 @@ class KeypointsToAngles:
         # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
 
         # Choose positive or negative pitch angle
-        correction = 0.15
+        correction = 0.0
         if intermediate_angle > np.pi/2:
             HipPitch = np.pi - omega_HP_module - correction
         else:
@@ -403,7 +403,7 @@ class KeypointsToAngles:
 
             # HipPitch angles 
             if all (body_part in wp_dict for body_part in HP):
-                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
+                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[1]), wp_dict.get(HP[0]))
 
             # LShoulder angles 
             if all (body_part in wp_dict for body_part in LS):        

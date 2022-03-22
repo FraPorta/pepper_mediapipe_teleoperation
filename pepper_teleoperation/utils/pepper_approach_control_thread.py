@@ -370,8 +370,8 @@ class PepperApproachControl(Thread):
                  "HipPitch"]
         
         # Speed limits for the joints
-        fractionMaxSpeed = 0.4
-        fractionMaxSpeed_h = 0.2
+        fractionMaxSpeed = 0.5
+        fractionMaxSpeed_h = 0.3
 
         print("Start controlling Pepper joints!")
         self.queue_out.put("Start controlling Pepper joints!")
@@ -478,13 +478,15 @@ class PepperApproachControl(Thread):
                 LHand_close = wp_dict.get('10')
                 LHand_open = wp_dict.get('12')
                 ### Pepper joints control ###
+                # print("HipPitch: ", self.HipPitch)
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
-                          float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), float(0)]
+                          float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll)]
 
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
-                    motion_service.setAngles(names, angles, fractionMaxSpeed)
+                    motion_service.setAngles(names[:-1], angles, fractionMaxSpeed)
+                    # motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
                 # if rClosed:
                 if RHand_close:

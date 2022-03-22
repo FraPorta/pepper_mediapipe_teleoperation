@@ -73,12 +73,15 @@ def get_args():
 
 def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened):
     p = []
-    for index, landmark in enumerate(landmarks.landmark):
+    for landmark in landmarks.landmark:
         p.append([landmark.x, landmark.y, landmark.z])
     # p = np.array(p)
 
     pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
     pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
+
+    # pNeck =   0.5 * (p[11] + p[12])
+    # pMidHip = 0.5 * (p[23] + p[24])
     
     wp_dict = {}
 
@@ -99,14 +102,12 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
     wp_dict['11'] = rHand_opened
     wp_dict['12'] = lHand_opened
  
-    # print(wp_dict)
     ss.send(wp_dict)
 
 def checkLim(val, limits):
     return val < limits[0] or val > limits[1]
 
 def do_teleop(landmarks):
-    global angle_trace
     p = []
     for index, landmark in enumerate(landmarks.landmark):
         p.append([landmark.x, landmark.y, landmark.z])
@@ -132,8 +133,7 @@ def do_teleop(landmarks):
     RElbowYaw, RElbowRoll = keypointsToAngles.obtain_RElbowYawRoll_angle(pNeck, p[12], p[14], p[16])
 
     HipPitch = keypointsToAngles.obtain_HipPitch_angles(pMidHip, pNeck) # This is switched, why?
-
-    angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
+    # angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
     
 
     # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
@@ -152,8 +152,6 @@ def do_teleop(landmarks):
         return True
 
 def main():
-    # global angle_trace
-
     args = get_args()
 
     cap_device = args.device

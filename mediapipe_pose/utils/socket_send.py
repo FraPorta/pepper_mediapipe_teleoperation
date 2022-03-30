@@ -2,6 +2,9 @@ import zmq
 import time
 import json
 import sys
+import socket
+import urllib.request
+
 
 ## class SocketSend
 #
@@ -17,10 +20,14 @@ class SocketSend:
         # initialize socket
         self.ctx = zmq.Context()
         self.sock = self.ctx.socket(zmq.PUB)
+        
+        external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')   
+        print(external_ip)
 
         # try socket bind
         try: 
             self.sock.bind("tcp://*:1234")
+            # self.sock.bind("tcp://130.251.13.116:1234")
         except zmq.error.ZMQError as e:
             print(e)
             sys.exit(-1)

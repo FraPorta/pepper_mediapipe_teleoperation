@@ -164,7 +164,8 @@ def main():
 
     use_brect = args.use_brect
     plot_world_landmark = args.plot_world_landmark
-    enable_teleop = args.enable_teleop
+    # enable_teleop = args.enable_teleop
+    enable_teleop = True
 
     video = args.video
     fps = args.fps

@@ -9,6 +9,8 @@ import motion
 import time
 import random
 
+import scipy
+print(scipy.__version__)
 from scipy import signal
 import numpy as np
 from threading import Thread

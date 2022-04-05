@@ -1,3 +1,4 @@
 *.pyc
 *.avi
 pepper_teleoperation/angles_data/**
+pepper_teleoperation/teleop_holistic/**

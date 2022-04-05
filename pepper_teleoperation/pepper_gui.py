@@ -2,16 +2,21 @@ import Tkinter as tk
 import ttk
 import argparse
 import qi
+import os
 # import time
 import sys
 import pyglet
+import subprocess 
 from PIL import ImageTk, Image
 
-from GUI_material.image_label import ImageLabel
+print(os.getcwd())
+
+# from GUI_material.image_label import ImageLabel
 from utils.speech_thread import SpeechThread
 from utils.ok_pepper_thread import OkPepperThread
 from utils.pepper_approach_control_thread import PepperApproachControl
 from Queue import Queue
+
 
 # Colors
 red = '#d63d41'
@@ -130,19 +135,19 @@ class PepperGui:
         self.btn_connect.pack()
         self.btn_connect.place(relx=0.4, y=448)
         
-        # Gifs
-        self.gif = ImageLabel(self.master)
-        self.gif.config(relief="flat", borderwidth=0)
-        self.gif.pack()
-        self.gif.place(x=257, y=74)
-        self.gif.load('GUI_material/voice_transp_frame.gif')
+        # # Gifs
+        # self.gif = ImageLabel(self.master)
+        # self.gif.config(relief="flat", borderwidth=0)
+        # self.gif.pack()
+        # self.gif.place(x=257, y=74)
+        # self.gif.load('GUI_material/voice_transp_frame.gif')
         
-        gif_path = 'GUI_material/load_white_frame.gif'
-        self.gif_load = ImageLabel(self.master)
-        self.gif_load.config(relief="flat", borderwidth=0)
-        self.gif_load.pack()
-        self.gif_load.place(x=257, y=240)
-        self.gif_load.load(gif_path)
+        # gif_path = 'GUI_material/load_white_frame.gif'
+        # self.gif_load = ImageLabel(self.master)
+        # self.gif_load.config(relief="flat", borderwidth=0)
+        # self.gif_load.pack()
+        # self.gif_load.place(x=257, y=240)
+        # self.gif_load.load(gif_path)
         
         # Labels
         self.txt_1 = tk.Label(self.master,
@@ -339,11 +344,11 @@ class PepperGui:
         
         if self.approach.get() == 1 and self.teleop.get() == 1:
             # Show gif
-            self.gif_load = ImageLabel(self.master)
-            self.gif_load.config(relief="flat", borderwidth=0)
-            self.gif_load.pack()
-            self.gif_load.place(x=257, y=240)
-            self.gif_load.load(gif_path)
+            # self.gif_load = ImageLabel(self.master)
+            # self.gif_load.config(relief="flat", borderwidth=0)
+            # self.gif_load.pack()
+            # self.gif_load.place(x=257, y=240)
+            # self.gif_load.load(gif_path)
             
             approach_requested = True
             approach_only = False
@@ -356,11 +361,11 @@ class PepperGui:
             
         elif self.approach.get() == 0 and self.teleop.get() == 1:
             # Show gif
-            self.gif_load = ImageLabel(self.master)
-            self.gif_load.config(relief="flat", borderwidth=0)
-            self.gif_load.pack()
-            self.gif_load.place(x=257, y=240)
-            self.gif_load.load(gif_path)
+            # self.gif_load = ImageLabel(self.master)
+            # self.gif_load.config(relief="flat", borderwidth=0)
+            # self.gif_load.pack()
+            # self.gif_load.place(x=257, y=240)
+            # self.gif_load.load(gif_path)
             
             approach_requested = False
             approach_only = False
@@ -373,11 +378,11 @@ class PepperGui:
             
         elif self.approach.get() == 1 and self.teleop.get() == 0:
             # Show gif
-            self.gif_load = ImageLabel(self.master)
-            self.gif_load.config(relief="flat", borderwidth=0)
-            self.gif_load.pack()
-            self.gif_load.place(x=257, y=240)
-            self.gif_load.load(gif_path)
+            # self.gif_load = ImageLabel(self.master)
+            # self.gif_load.config(relief="flat", borderwidth=0)
+            # self.gif_load.pack()
+            # self.gif_load.place(x=257, y=240)
+            # self.gif_load.load(gif_path)
             
             approach_requested = True
             approach_only = True
@@ -398,12 +403,12 @@ class PepperGui:
         # self.gif_load.pack_forget()
         self.q_pepper.put(True)
         
-        gif_path = 'GUI_material/load_white_frame.gif'
-        self.gif_load = ImageLabel(self.master)
-        self.gif_load.config(relief="flat", borderwidth=0)
-        self.gif_load.pack()
-        self.gif_load.place(x=257, y=240)
-        self.gif_load.load(gif_path)
+        # gif_path = 'GUI_material/load_white_frame.gif'
+        # self.gif_load = ImageLabel(self.master)
+        # self.gif_load.config(relief="flat", borderwidth=0)
+        # self.gif_load.pack()
+        # self.gif_load.place(x=257, y=240)
+        # self.gif_load.load(gif_path)
         
         # Change button text and command
         self.btn_pepper.configure(text="Start Moving", command=self.start_pepper)
@@ -416,11 +421,11 @@ class PepperGui:
         self.q_stop.put("StopRec")
         
         # Show gif
-        self.gif = ImageLabel(self.master)
-        self.gif.config(relief="flat", borderwidth=0)
-        self.gif.pack()
-        self.gif.place(x=257, y=74)
-        self.gif.load('GUI_material/voice_transp.gif')
+        # self.gif = ImageLabel(self.master)
+        # self.gif.config(relief="flat", borderwidth=0)
+        # self.gif.pack()
+        # self.gif.place(x=257, y=74)
+        # self.gif.load('GUI_material/voice_transp.gif')
         
         # Change button text and command
         self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)
@@ -436,12 +441,12 @@ class PepperGui:
     def stop_talk(self):
         self.q_record.put("StopRec")
         
-        self.gif = ImageLabel(self.master)
-        self.gif.config(relief="flat", borderwidth=0)
-        self.gif.pack()
-        self.gif.place(x=257, y=74)
-        self.gif.load('GUI_material/voice_transp_frame.gif')
-        self.btn_rec.configure(text="Start Talking", command=self.start_talk)
+        # self.gif = ImageLabel(self.master)
+        # self.gif.config(relief="flat", borderwidth=0)
+        # self.gif.pack()
+        # self.gif.place(x=257, y=74)
+        # self.gif.load('GUI_material/voice_transp_frame.gif')
+        # self.btn_rec.configure(text="Start Talking", command=self.start_talk)
         
         # Re-init voice recognition for pressing buttons
         self.q_stop.put("Rec")
@@ -521,6 +526,14 @@ class PepperGui:
 if __name__ == '__main__':
     # Start naoqi session
     session = qi.Session()
+
+    # script = ["C:/Windows/System32/where.exe", "python"]
+    # out = subprocess.check_output(" ".join(script), shell=True)
+    # print(out)
+    
+    # print(os.path.dirname(os.getcwd()))
+    script = [os.getcwd()+"/teleop_holistic/teleop_holistic.exe"]    
+    process = subprocess.Popen(" ".join(script), shell=True)
     
     # Start GUI
     root = tk.Tk()

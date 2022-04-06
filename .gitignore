@@ -2,3 +2,4 @@
 *.avi
 pepper_teleoperation/angles_data/**
 pepper_teleoperation/teleop_holistic/**
+pepper_teleoperation/utils/credentials.py

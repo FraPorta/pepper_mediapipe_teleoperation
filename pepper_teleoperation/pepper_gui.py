@@ -9,9 +9,9 @@ import pyglet
 import subprocess 
 from PIL import ImageTk, Image
 
-print(os.getcwd())
+# print(os.getcwd())
 
-# from GUI_material.image_label import ImageLabel
+from GUI_material.image_label import ImageLabel
 from utils.speech_thread import SpeechThread
 from utils.ok_pepper_thread import OkPepperThread
 from utils.pepper_approach_control_thread import PepperApproachControl
@@ -73,7 +73,7 @@ class PepperGui:
         self.master.resizable(False, False)
         # Background
         # image = Image.open('GUI_material/background.png')
-        IMAGE_PATH = 'GUI_material/background.png'
+        IMAGE_PATH = resource_path('GUI_material/background.png')
         WIDTH, HEIGTH = 1000, 562
 
         self.canvas = tk.Canvas(self.master, width=WIDTH, height=HEIGTH, bd=0, highlightthickness=0, relief='ridge')
@@ -135,19 +135,19 @@ class PepperGui:
         self.btn_connect.pack()
         self.btn_connect.place(relx=0.4, y=448)
         
-        # # Gifs
-        # self.gif = ImageLabel(self.master)
-        # self.gif.config(relief="flat", borderwidth=0)
-        # self.gif.pack()
-        # self.gif.place(x=257, y=74)
-        # self.gif.load('GUI_material/voice_transp_frame.gif')
+        # Gifs
+        self.gif = ImageLabel(self.master)
+        self.gif.config(relief="flat", borderwidth=0)
+        self.gif.pack()
+        self.gif.place(x=257, y=74)
+        self.gif.load(resource_path('GUI_material/voice_transp_frame.gif'))
         
-        # gif_path = 'GUI_material/load_white_frame.gif'
-        # self.gif_load = ImageLabel(self.master)
-        # self.gif_load.config(relief="flat", borderwidth=0)
-        # self.gif_load.pack()
-        # self.gif_load.place(x=257, y=240)
-        # self.gif_load.load(gif_path)
+        gif_path = resource_path('GUI_material/load_white_frame.gif')
+        self.gif_load = ImageLabel(self.master)
+        self.gif_load.config(relief="flat", borderwidth=0)
+        self.gif_load.pack()
+        self.gif_load.place(x=257, y=240)
+        self.gif_load.load(gif_path)
         
         # Labels
         self.txt_1 = tk.Label(self.master,
@@ -340,15 +340,15 @@ class PepperGui:
     #  Start Pepper approach/teleoperation
     def start_pepper(self):
         show_plot = self.save_data.get()
-        gif_path = 'GUI_material/load_white.gif'
+        gif_path = resource_path('GUI_material/load_white.gif')
         
         if self.approach.get() == 1 and self.teleop.get() == 1:
             # Show gif
-            # self.gif_load = ImageLabel(self.master)
-            # self.gif_load.config(relief="flat", borderwidth=0)
-            # self.gif_load.pack()
-            # self.gif_load.place(x=257, y=240)
-            # self.gif_load.load(gif_path)
+            self.gif_load = ImageLabel(self.master)
+            self.gif_load.config(relief="flat", borderwidth=0)
+            self.gif_load.pack()
+            self.gif_load.place(x=257, y=240)
+            self.gif_load.load(gif_path)
             
             approach_requested = True
             approach_only = False
@@ -361,11 +361,11 @@ class PepperGui:
             
         elif self.approach.get() == 0 and self.teleop.get() == 1:
             # Show gif
-            # self.gif_load = ImageLabel(self.master)
-            # self.gif_load.config(relief="flat", borderwidth=0)
-            # self.gif_load.pack()
-            # self.gif_load.place(x=257, y=240)
-            # self.gif_load.load(gif_path)
+            self.gif_load = ImageLabel(self.master)
+            self.gif_load.config(relief="flat", borderwidth=0)
+            self.gif_load.pack()
+            self.gif_load.place(x=257, y=240)
+            self.gif_load.load(gif_path)
             
             approach_requested = False
             approach_only = False
@@ -378,11 +378,11 @@ class PepperGui:
             
         elif self.approach.get() == 1 and self.teleop.get() == 0:
             # Show gif
-            # self.gif_load = ImageLabel(self.master)
-            # self.gif_load.config(relief="flat", borderwidth=0)
-            # self.gif_load.pack()
-            # self.gif_load.place(x=257, y=240)
-            # self.gif_load.load(gif_path)
+            self.gif_load = ImageLabel(self.master)
+            self.gif_load.config(relief="flat", borderwidth=0)
+            self.gif_load.pack()
+            self.gif_load.place(x=257, y=240)
+            self.gif_load.load(gif_path)
             
             approach_requested = True
             approach_only = True
@@ -403,12 +403,12 @@ class PepperGui:
         # self.gif_load.pack_forget()
         self.q_pepper.put(True)
         
-        # gif_path = 'GUI_material/load_white_frame.gif'
-        # self.gif_load = ImageLabel(self.master)
-        # self.gif_load.config(relief="flat", borderwidth=0)
-        # self.gif_load.pack()
-        # self.gif_load.place(x=257, y=240)
-        # self.gif_load.load(gif_path)
+        gif_path = resource_path('GUI_material/load_white_frame.gif')
+        self.gif_load = ImageLabel(self.master)
+        self.gif_load.config(relief="flat", borderwidth=0)
+        self.gif_load.pack()
+        self.gif_load.place(x=257, y=240)
+        self.gif_load.load(gif_path)
         
         # Change button text and command
         self.btn_pepper.configure(text="Start Moving", command=self.start_pepper)
@@ -421,32 +421,30 @@ class PepperGui:
         self.q_stop.put("StopRec")
         
         # Show gif
-        # self.gif = ImageLabel(self.master)
-        # self.gif.config(relief="flat", borderwidth=0)
-        # self.gif.pack()
-        # self.gif.place(x=257, y=74)
-        # self.gif.load('GUI_material/voice_transp.gif')
+        self.gif = ImageLabel(self.master)
+        self.gif.config(relief="flat", borderwidth=0)
+        self.gif.pack()
+        self.gif.place(x=257, y=74)
+        self.gif.load(resource_path('GUI_material/voice_transp.gif'))
         
         # Change button text and command
         self.btn_rec.configure(text="Stop Talking", command=self.stop_talk)
         
-        
         # Start recording for Speech to text   
         self.q_record.put("Rec")  
         
-
     ## method stop_talk
     #
     #  Stop recognizing voice and hide microphone gif
     def stop_talk(self):
         self.q_record.put("StopRec")
         
-        # self.gif = ImageLabel(self.master)
-        # self.gif.config(relief="flat", borderwidth=0)
-        # self.gif.pack()
-        # self.gif.place(x=257, y=74)
-        # self.gif.load('GUI_material/voice_transp_frame.gif')
-        # self.btn_rec.configure(text="Start Talking", command=self.start_talk)
+        self.gif = ImageLabel(self.master)
+        self.gif.config(relief="flat", borderwidth=0)
+        self.gif.pack()
+        self.gif.place(x=257, y=74)
+        self.gif.load(resource_path('GUI_material/voice_transp_frame.gif'))
+        self.btn_rec.configure(text="Start Talking", command=self.start_talk)
         
         # Re-init voice recognition for pressing buttons
         self.q_stop.put("Rec")
@@ -523,17 +521,23 @@ class PepperGui:
                     
         self.master.after(250, func=self.check_queues)
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 if __name__ == '__main__':
     # Start naoqi session
     session = qi.Session()
-
-    # script = ["C:/Windows/System32/where.exe", "python"]
-    # out = subprocess.check_output(" ".join(script), shell=True)
-    # print(out)
     
-    # print(os.path.dirname(os.getcwd()))
-    script = [os.getcwd()+"/teleop_holistic/teleop_holistic.exe"]    
-    process = subprocess.Popen(" ".join(script), shell=True)
+    script = [resource_path(os.getcwd()+"/teleop_holistic/teleop_holistic.exe")]
+    # script = [os.getcwd()+"/teleop_holistic/teleop_holistic.exe"]    
+    process = subprocess.Popen("".join(script), shell=True)
     
     # Start GUI
     root = tk.Tk()

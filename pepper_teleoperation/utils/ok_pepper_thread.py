@@ -1,15 +1,18 @@
 # -*- encoding: UTF-8 -*-
 
-import qi
-from naoqi import ALProxy
-import argparse
-import sys
+# import qi
+# from naoqi import ALProxy
+# import argparse
+# import sys
 import time
-import numpy as np
-import audioop
+# import numpy as np
+# import audioop
 
 import speech_recognition as sr
 from threading import Thread
+import credentials
+
+GOOGLE_CLOUD_SPEECH_CREDENTIALS = credentials.GOOGLE_CLOUD_SPEECH_CREDENTIALS
 
 class OkPepperThread(Thread):
     def __init__(self, q_button, q_stop):
@@ -31,6 +34,7 @@ class OkPepperThread(Thread):
     
     # Override the run() function of Thread class
     def run(self):
+        # self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 0.5 second to calibrate the energy threshold for ambient noise levels
         while self.is_running:
             if not self.q_stop.empty():
                 command = self.q_stop.get(block=False, timeout= None)
@@ -48,7 +52,7 @@ class OkPepperThread(Thread):
                 self.text = self.recognize()
                 if self.text is not None:
                     # text to lower case
-                    txt = self.text.lower()
+                    txt = self.text.lower().strip()
                     print(txt)
                     
                     # Voice commands for the buttons
@@ -73,15 +77,15 @@ class OkPepperThread(Thread):
     def recognize(self):
         # print(self.list_working_microphones())
         with sr.Microphone(device_index=1) as source:  
-            self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 0.5 second to calibrate the energy threshold for ambient noise levels
+            
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=3)
+                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=None)
                 
                 # received audio data, recognize it using Google Speech Recognition
-                recognized_text = self.r.recognize_google(self.audio, language="en-EN")
-                
+                # recognized_text = self.r.recognize_google(self.audio, language="en-EN")
+                recognized_text = self.r.recognize_google_cloud(self.audio, credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS)
             except sr.WaitTimeoutError:
                 pass
             except sr.UnknownValueError:

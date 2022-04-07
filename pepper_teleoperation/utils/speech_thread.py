@@ -1,12 +1,12 @@
 # -*- encoding: UTF-8 -*-
 
 import qi
-from naoqi import ALProxy
+# from naoqi import ALProxy
 import argparse
 import sys
 import time
-import numpy as np
-import audioop
+# import numpy as np
+# import audioop
 import threading
 import math
 
@@ -14,6 +14,10 @@ import speech_recognition as sr
 from threading import Thread
 
 from head_motion import HeadMotionThread
+
+import credentials
+
+GOOGLE_CLOUD_SPEECH_CREDENTIALS = credentials.GOOGLE_CLOUD_SPEECH_CREDENTIALS
 
 class SpeechThread(Thread):
     def __init__(self, session, q, q_rec, q_button):
@@ -74,12 +78,10 @@ class SpeechThread(Thread):
             if self.rec:
                 self.text = self.recognize()
                 if self.text is not None:
+
                     # text to lower case
-                    txt = self.text.lower()
+                    txt = self.text.lower().strip()
                     
-                    # # disable autonomous blinking if activated
-                    # if self.blink_service.isEnabled():
-                    #         self.blink_service.setEnabled(False)
                     try:      
                         # Voice commands to control Pepper position and the GUI
                         if txt == 'move forward' or txt == 'go forward' or txt == 'forward':
@@ -276,10 +278,11 @@ class SpeechThread(Thread):
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=1, phrase_time_limit=3)
+                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=None)
 
                 # received audio data, recognize it using Google Speech Recognition
-                recognized_text = self.r.recognize_google(self.audio, language="en-EN")
+                # recognized_text = self.r.recognize_google(self.audio, language="en-EN")
+                recognized_text = self.r.recognize_google_cloud(self.audio, credentials_json= GOOGLE_CLOUD_SPEECH_CREDENTIALS)
                 
             except sr.WaitTimeoutError:
                 pass

@@ -21,8 +21,8 @@ class SocketSend:
         self.ctx = zmq.Context()
         self.sock = self.ctx.socket(zmq.PUB)
         
-        external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')   
-        print(external_ip)
+        # external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')   
+        # print(external_ip)
 
         # try socket bind
         try: 

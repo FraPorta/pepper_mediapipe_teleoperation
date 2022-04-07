@@ -6,8 +6,8 @@ import qi
 import argparse
 import sys
 import motion
-import time
-import random
+# import time
+# import random
 
 from scipy import signal
 import numpy as np

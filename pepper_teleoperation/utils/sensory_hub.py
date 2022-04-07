@@ -25,8 +25,8 @@ Project:     CARESSES (http://caressesrobot.org/en/)
 
 from threading import Thread
 import time
-import numpy
-import math
+# import numpy
+# import math
 import os
 import json
 import logging

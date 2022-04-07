@@ -1,12 +1,12 @@
 # -*- encoding: UTF-8 -*-
 
 import qi
-from naoqi import ALProxy
+# from naoqi import ALProxy
 import argparse
 import sys
 import time
-import numpy as np
-import audioop
+# import numpy as np
+# import audioop
 import threading
 import math
 

@@ -9,7 +9,7 @@ import time
 import csv
 import numpy as np
 from scipy import signal
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from threading import Thread
 from datetime import datetime
 

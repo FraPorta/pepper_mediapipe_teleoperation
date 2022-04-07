@@ -1,15 +1,13 @@
 import Tkinter as tk
-import ttk
-import argparse
+# import ttk
+# import argparse
 import qi
 import os
 # import time
 import sys
-import pyglet
+# import pyglet
 import subprocess 
 from PIL import ImageTk, Image
-
-# print(os.getcwd())
 
 from GUI_material.image_label import ImageLabel
 from utils.speech_thread import SpeechThread
@@ -29,12 +27,13 @@ orange = '#ec5633'
 
 class PepperGui:
     def __init__(self, master, session):
+        
         #create buttons,entries,etc
         self.master = master
         self.session = session
         
         self.teleop = tk.IntVar(value=1)
-        self.save_data = tk.IntVar(value=1)
+        self.save_data = tk.IntVar(value=0)
         self.approach = tk.IntVar()
         
         # Instantiate queue and class for speech recognition
@@ -73,6 +72,7 @@ class PepperGui:
         self.master.resizable(False, False)
         # Background
         # image = Image.open('GUI_material/background.png')
+        
         IMAGE_PATH = resource_path('GUI_material/background.png')
         WIDTH, HEIGTH = 1000, 562
 
@@ -187,7 +187,7 @@ class PepperGui:
                                    anchor='w')
 
         self.txt_pepper.place(x=350, y=248)
-        self.txt_pepper.configure(text=" ")
+        self.txt_pepper.configure(text="The window showing pose estimation from the webcam will open soon...")
         
         self.lbl_conn = tk.Label(self.master,
                                  bg=darkest_red,
@@ -217,25 +217,6 @@ class PepperGui:
                                          bd=0,
                                          activeforeground='white')
         self.c_approach.place(x=80, y=y)
-        
-        # self.c_teleop = tk.Checkbutton(self.master,
-        #                                text = "Teleoperate",
-        #                                variable = self.teleop,
-        #                                onvalue = 1, 
-        #                                offvalue = 0,
-        #                                font=(font,12), 
-        #                                bg=red,
-        #                                fg='white',
-        #                                selectcolor=light_red,
-        #                                activebackground=light_red,
-        #                                activeforeground='white',
-        #                                disabledforeground='white',
-        #                                highlightthickness=0,
-        #                                bd=0,
-        #                                relief=tk.FLAT,
-        #                                indicatoron=True,
-        #                                state=tk.DISABLED)
-        # self.c_teleop.place(x=80, y=y+30)
         
         self.c_save = tk.Checkbutton(self.master,
                                        text = "Save data",
@@ -292,7 +273,8 @@ class PepperGui:
                                  fg=light_red,
                                  font=(font,12,'bold'))
         self.lbl_port.place(x=395, y=410)
-        self.lbl_port.configure(text="Port")  
+        self.lbl_port.configure(text="Port") 
+        
     
     
     ## method connect_pepper
@@ -327,6 +309,7 @@ class PepperGui:
                 self.btn_connect.configure(state=tk.DISABLED, bg="#57aa03", text="Connected!")
                 self.text_ip.configure(state=tk.DISABLED)
                 self.text_port.configure(state=tk.DISABLED)
+                self.txt_pepper.configure(text="Now you can control Pepper! Press Start Talking or Start Moving to begin...")
                 self.lbl_conn.place_forget()
                 
                 # Create Speech Thread
@@ -522,6 +505,10 @@ class PepperGui:
                     self.btn_pepper.invoke()
                     
         self.master.after(250, func=self.check_queues)
+    
+def init_mediapipe():
+    script = resource_path("teleop_holistic/teleop_holistic.exe")
+    process = subprocess.Popen(script)
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -529,16 +516,16 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
-
+        # base_path = os.path.abspath(".")
+        base_path = os.getcwd()
+        
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
+    init_mediapipe()
+    
     # Start naoqi session
     session = qi.Session()
-    
-    script = [resource_path(os.getcwd()+"/teleop_holistic/teleop_holistic.exe")]   
-    process = subprocess.Popen("".join(script), shell=True)
     
     # Start GUI
     root = tk.Tk()

@@ -27,7 +27,7 @@ from utils import CvFpsCalc
 from utils import KeypointsToAngles
 from utils import SocketSend
 from utils import HandsUtils
-from utils import SocketReceiveSignal
+# from utils import SocketReceiveSignal
 from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
 
 keypointsToAngles = KeypointsToAngles()

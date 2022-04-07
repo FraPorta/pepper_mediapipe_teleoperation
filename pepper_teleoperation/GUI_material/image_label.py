@@ -1,7 +1,7 @@
 import Tkinter as tk
-import tkFileDialog as filedialog
-import ttk
-import time 
+# import tkFileDialog as filedialog
+# import ttk
+# import time 
 
 from PIL import Image, ImageTk
 from itertools import count, cycle

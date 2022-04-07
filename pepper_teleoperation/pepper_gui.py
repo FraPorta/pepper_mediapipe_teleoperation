@@ -5,6 +5,7 @@ import qi
 import os
 # import time
 import sys
+import signal
 # import pyglet
 import subprocess 
 from PIL import ImageTk, Image
@@ -26,8 +27,8 @@ orange = '#ec5633'
 # pyglet.font.add_file('GUI_material\Roboto-Medium.ttf')
 
 class PepperGui:
-    def __init__(self, master, session):
-        
+    def __init__(self, master, session, process):
+        self.p_mediapipe = process
         #create buttons,entries,etc
         self.master = master
         self.session = session
@@ -436,6 +437,8 @@ class PepperGui:
     #
     #  Stop speech recognition thread and close the window
     def on_closing(self):
+        os.kill(self.p_mediapipe.pid, signal.CTRL_BREAK_EVENT)
+        
         # Stop the two Speech Recognition Threads
         self.q_record.put("StopRun")
         self.q_stop.put("StopRun")
@@ -460,7 +463,9 @@ class PepperGui:
                     #     self.ok_pepper.join()
         
         self.master.destroy()
-    
+        
+        
+        
     ## method start
     #
     #  Start the mainloop
@@ -509,6 +514,7 @@ class PepperGui:
 def init_mediapipe():
     script = resource_path("teleop_holistic/teleop_holistic.exe")
     process = subprocess.Popen(script)
+    return process
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -522,12 +528,12 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    init_mediapipe()
+    process = init_mediapipe()
     
     # Start naoqi session
     session = qi.Session()
     
     # Start GUI
     root = tk.Tk()
-    app = PepperGui(root, session)
+    app = PepperGui(root, session, process)
     app.start()

@@ -203,114 +203,104 @@ def main():
     rHand_opened = False
     lHand_opened = False
     
-    while True:
-        start = time()
+    try:
+        while True:
+            start = time()
 
-        display_fps = cvFpsCalc.get()
+            display_fps = cvFpsCalc.get()
 
-        ret, image = cap.read()
-        if not ret:
-            break
-        # image = cv.flip(image, 1)
-        debug_image = copy.deepcopy(image)
-        
-        # To improve performance, optionally mark the image as not writeable to pass by reference.
-        image.flags.writeable = False
-        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-        results = pose.process(image)
-        image.flags.writeable = True
-        
-        if results.pose_landmarks is not None:
-            mp_drawing.draw_landmarks(
-                debug_image,
-                results.pose_landmarks,
-                mp_holistic.POSE_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-                # mp_drawing.DrawingSpec(color=(121, 22, 76), thickness=2, circle_radius=4),
-                # mp_drawing.DrawingSpec(color=(250, 44, 250), thickness=2, circle_radius=2),
-            # brect = calc_bounding_rect(debug_image, results.pose_landmarks)
-            # debug_image = draw_landmarks(debug_image, results.pose_landmarks)
-            # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-            # mp_drawing.plot_landmarks(results.pose_world_landmarks, mp_holistic.POSE_CONNECTIONS)
-        
-        # Draw hands landmarks
-        if results.right_hand_landmarks:
-            handedness = "Right"
-            # for num, hand in enumerate(results.right_hand_landmarks):
-            mp_drawing.draw_landmarks(debug_image,
+            ret, image = cap.read()
+            if not ret:
+                break
+            # image = cv.flip(image, 1)
+            debug_image = copy.deepcopy(image)
+            
+            # To improve performance, optionally mark the image as not writeable to pass by reference.
+            image.flags.writeable = False
+            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+            results = pose.process(image)
+            image.flags.writeable = True
+            
+            if results.pose_landmarks is not None:
+                mp_drawing.draw_landmarks(
+                    debug_image,
+                    results.pose_landmarks,
+                    mp_holistic.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+            
+            # Draw hands landmarks
+            if results.right_hand_landmarks:
+                handedness = "Right"
+                mp_drawing.draw_landmarks(debug_image,
+                                            results.right_hand_landmarks,
+                                            mp_holistic.HAND_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=dark_blue,
+                                                                    thickness=2,
+                                                                    circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=blue,
+                                                                    thickness=2,
+                                                                    circle_radius=2),
+                                            )
+                
+                # Draw angles to image from joint list
+                rHand_closed, rHand_opened = hu.draw_finger_angles_3d(debug_image,
                                         results.right_hand_landmarks,
-                                        mp_holistic.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=dark_blue,
-                                                                thickness=2,
-                                                                circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=blue,
-                                                                thickness=2,
-                                                                circle_radius=2),
-                                        )
-            # # Render left or right detection
-            # text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
-            # if text is not None:
-            #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
-            # Draw angles to image from joint list
-            rHand_closed, rHand_opened = hu.draw_finger_angles_3d(debug_image,
-                                     results.right_hand_landmarks,
-                                     hu.joint_list_low,
-                                     handedness,
-                                     cap_width,
-                                     cap_height)
-        
-        if results.left_hand_landmarks:
-            handedness = "Left"
-            # for num, hand in enumerate(results.right_hand_landmarks):
-            mp_drawing.draw_landmarks(debug_image,
+                                        hu.joint_list_low,
+                                        handedness,
+                                        cap_width,
+                                        cap_height)
+            
+            if results.left_hand_landmarks:
+                handedness = "Left"
+                mp_drawing.draw_landmarks(debug_image,
+                                            results.left_hand_landmarks,
+                                            mp_holistic.HAND_CONNECTIONS, 
+                                            mp_drawing.DrawingSpec(color=dark_orange,
+                                                                    thickness=2,
+                                                                    circle_radius=4),
+                                            mp_drawing.DrawingSpec(color=orange,
+                                                                    thickness=2,
+                                                                    circle_radius=2),)
+
+                # Draw angles to image from joint list
+                lHand_closed, lHand_opened = hu.draw_finger_angles_3d(debug_image,
                                         results.left_hand_landmarks,
-                                        mp_holistic.HAND_CONNECTIONS, 
-                                        mp_drawing.DrawingSpec(color=dark_orange,
-                                                                thickness=2,
-                                                                circle_radius=4),
-                                        mp_drawing.DrawingSpec(color=orange,
-                                                                thickness=2,
-                                                                circle_radius=2),)
-            # # Render left or right detection
-            # text, coord, hand_rl = hu.get_label(num, hand, results_hands.multi_handedness, cap_width, cap_height)
-            # if text is not None:
-            #     cv.putText(debug_image, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
-            # Draw angles to image from joint list
-            lHand_closed, lHand_opened = hu.draw_finger_angles_3d(debug_image,
-                                     results.left_hand_landmarks,
-                                     hu.joint_list_low,
-                                     handedness,
-                                     cap_width,
-                                     cap_height)
-        
-        if plot_world_landmark:
+                                        hu.joint_list_low,
+                                        handedness,
+                                        cap_width,
+                                        cap_height)
+            
+            # if plot_world_landmark:
+            #     if results.pose_world_landmarks is not None:
+            #         plot_world_landmarks(plt, ax, results.pose_world_landmarks)
+
             if results.pose_world_landmarks is not None:
-                plot_world_landmarks(plt, ax, results.pose_world_landmarks)
-
-        if results.pose_world_landmarks is not None:
-            cv.putText(debug_image, "TRACKING", (10, 90),
-                cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
-            if not do_teleop(results.pose_world_landmarks):
-                # limit reached
-                cv.putText(debug_image, "LIMIT", (10, 140),
+                cv.putText(debug_image, "TRACKING", (10, 90),
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
+                if not do_teleop(results.pose_world_landmarks):
+                    # limit reached
+                    cv.putText(debug_image, "LIMIT", (10, 140),
+                        cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
 
-            if enable_teleop:
-                socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened)
+                if enable_teleop:
+                    socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened)
 
-        cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 145, 255), 2, cv.LINE_AA)
+            cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
+                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 145, 255), 2, cv.LINE_AA)
 
-        key = cv.waitKey(1)
-        if key == 27:  # ESC
-            break
+            key = cv.waitKey(1)
+            if key == 27:  # ESC
+                break
+            
+            image = cv.flip(debug_image, 1)
+            cv.imshow('Pepper Teleop', debug_image)
+
+            # if (len(video)>0):
+            sleep(max(1./fps - (time() - start), 0))
+    except KeyboardInterrupt:
+        cap.release()
+        cv.destroyAllWindows()
         
-        image = cv.flip(debug_image, 1)
-        cv.imshow('Pepper Teleop', debug_image)
-
-        # if (len(video)>0):
-        sleep(max(1./fps - (time() - start), 0))
-
     cap.release()
     cv.destroyAllWindows()
 

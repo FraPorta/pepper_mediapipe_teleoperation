@@ -78,12 +78,10 @@ class SpeechThread(Thread):
             if self.rec:
                 self.text = self.recognize()
                 if self.text is not None:
+
                     # text to lower case
-                    txt = self.text.lower()
+                    txt = self.text.lower().strip()
                     
-                    # # disable autonomous blinking if activated
-                    # if self.blink_service.isEnabled():
-                    #         self.blink_service.setEnabled(False)
                     try:      
                         # Voice commands to control Pepper position and the GUI
                         if txt == 'move forward' or txt == 'go forward' or txt == 'forward':

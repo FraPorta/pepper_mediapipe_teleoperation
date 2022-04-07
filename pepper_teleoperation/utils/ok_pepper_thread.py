@@ -52,7 +52,7 @@ class OkPepperThread(Thread):
                 self.text = self.recognize()
                 if self.text is not None:
                     # text to lower case
-                    txt = self.text.lower()
+                    txt = self.text.lower().strip()
                     print(txt)
                     
                     # Voice commands for the buttons
@@ -81,7 +81,7 @@ class OkPepperThread(Thread):
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=2)
+                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=None)
                 
                 # received audio data, recognize it using Google Speech Recognition
                 # recognized_text = self.r.recognize_google(self.audio, language="en-EN")

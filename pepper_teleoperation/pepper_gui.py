@@ -506,7 +506,9 @@ class PepperGui:
         # If the queue is not empty get the messages for pressing the buttons with voice commands
         if not self.q_button.empty():
             command = self.q_button.get(block=False, timeout=None)
+            
             if command is not None:
+                # print(command)
                 self.txt.configure(text=command)
                 if command == 'connect':
                     self.btn_connect.invoke()
@@ -535,8 +537,7 @@ if __name__ == '__main__':
     # Start naoqi session
     session = qi.Session()
     
-    script = [resource_path(os.getcwd()+"/teleop_holistic/teleop_holistic.exe")]
-    # script = [os.getcwd()+"/teleop_holistic/teleop_holistic.exe"]    
+    script = [resource_path(os.getcwd()+"/teleop_holistic/teleop_holistic.exe")]   
     process = subprocess.Popen("".join(script), shell=True)
     
     # Start GUI

@@ -20,6 +20,7 @@ This repository contains the python code to use the Softbank Robotics Humanoid R
         * 'move left'
         * 'rotate left'
         * 'rotate right'
+        * 'turn around'
         * 'stop talking'
         * 'start moving'
         * 'stop moving'
@@ -30,6 +31,7 @@ This repository contains the python code to use the Softbank Robotics Humanoid R
         * 'watch ahead'
         * 'track arm'
         * 'track user'
+        
 
 ## Visualize plots of the angles of a teleoperation session
 * Run `plot_angles.py` (in `pepper_teleoperation` folder)

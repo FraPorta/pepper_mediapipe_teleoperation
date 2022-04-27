@@ -276,8 +276,87 @@ class PepperGui:
         self.lbl_port.place(x=395, y=410)
         self.lbl_port.configure(text="Port") 
         
+        
+        self.lbl_hints = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12,'bold'))
+        self.lbl_hints.place(x=650, y=390)
+        # self.lbl_hints.configure(text="Commands (after Start Talking is pressed):") 
+        
+        self.lbl_hints1 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints1.place(x=650, y=412)
+        # self.lbl_hints1.configure(text="'move / go  forward / backward / right / left'") 
+        
+        self.lbl_hints2 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints2.place(x=650, y=412+22)
+        # self.lbl_hints2.configure(text="'rotate / turn  right / left'") 
+        
+        self.lbl_hints3 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints3.place(x=650, y=412+44)
+        # self.lbl_hints3.configure(text="'turn around'") 
+        
+        self.lbl_hints4 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints4.place(x=650, y=412+66)
+        # self.lbl_hints4.configure(text="'watch / look  ahead / right / left / up / down'") 
+        
+        self.lbl_hints5 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints5.place(x=650, y=412+88)
+        # self.lbl_hints5.configure(text="'track  arm / user'") 
+        
+        self.lbl_hints6 = tk.Label(self.master,
+                                 bg=darkest_red,
+                                 fg=light_red,
+                                 font=(font,12))
+        self.lbl_hints6.place(x=650, y=412+110)
+        # self.lbl_hints6.configure(text="'stop  tracking / focus'") 
+        
     
+    def show_hints(self):
+        self.lbl_hints.configure(text="Commands:") 
+        
+        self.lbl_hints1.configure(text="'move / go  forward / backward / right / left'") 
+        
+        self.lbl_hints2.configure(text="'rotate / turn  right / left'") 
+        
+        self.lbl_hints3.configure(text="'turn around'") 
+        
+        self.lbl_hints4.configure(text="'watch / look  ahead / right / left / up / down'") 
+        
+        self.lbl_hints5.configure(text="'track  arm / user'") 
+        
+        self.lbl_hints6.configure(text="'stop  tracking / focus'")
     
+    def hide_hints(self):
+        self.lbl_hints.configure(text="") 
+        
+        self.lbl_hints1.configure(text="") 
+        
+        self.lbl_hints2.configure(text="") 
+        
+        self.lbl_hints3.configure(text="") 
+        
+        self.lbl_hints4.configure(text="") 
+        
+        self.lbl_hints5.configure(text="") 
+        
+        self.lbl_hints6.configure(text="")
+        
     ## method connect_pepper
     #
     #  Starts the Session with given Ip and Port
@@ -404,6 +483,9 @@ class PepperGui:
         # Stop the other voice recognition thread for button pressing
         self.q_stop.put("StopRec")
         
+        # show commands hints
+        self.show_hints()
+        
         # Show gif
         self.gif = ImageLabel(self.master)
         self.gif.config(relief="flat", borderwidth=0)
@@ -422,6 +504,9 @@ class PepperGui:
     #  Stop recognizing voice and hide microphone gif
     def stop_talk(self):
         self.q_record.put("StopRec")
+        
+        # Hide commands hints
+        self.hide_hints()
         
         self.gif = ImageLabel(self.master)
         self.gif.config(relief="flat", borderwidth=0)

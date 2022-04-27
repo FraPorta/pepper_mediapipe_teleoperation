@@ -18,6 +18,15 @@ from head_motion import HeadMotionThread
 import credentials
 
 GOOGLE_CLOUD_SPEECH_CREDENTIALS = credentials.GOOGLE_CLOUD_SPEECH_CREDENTIALS
+PREFERRED_PHRASES = ['stop talking', 'start talking', 'start moving', 'stop moving',
+                     'move forward', 'go forward', 'move backwards', 'move back',
+                     'go back', 'go backwards', 'move right', 'go right', 
+                     'move left', 'go left', 'rotate left', 'turn left',
+                     'rotate right', 'turn right', 'turn around', 'watch right',
+                     'look right', 'watch left', 'look left', 'watch up', 
+                     'look up', 'watch down', 'look down', 'watch ahead', 
+                     'look ahead', 'track arm', 'follow arm', 'stop tracking',
+                     'stop following', "track user", 'stop focus']
 
 class SpeechThread(Thread):
     def __init__(self, session, q, q_rec, q_button):
@@ -38,6 +47,9 @@ class SpeechThread(Thread):
         
         # Speech recognizer  
         self.r = sr.Recognizer()
+        self.r.energy_threshold = 1000
+        self.r.dynamic_energy_threshold = True
+        self.r.pause_threshold = 0.5
         
         # Call the Thread class's init function
         Thread.__init__(self)
@@ -57,12 +69,10 @@ class SpeechThread(Thread):
         d = 0.5
         # angle of rotation 45 degrees
         angle = math.pi/4
-        
-        with sr.Microphone(device_index=1) as source:  
-            self.r.adjust_for_ambient_noise(source, duration=1)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
-        
+            
         # main loop
         while self.is_running:
+            
             # check for signals from the GUI
             if not self.q_rec.empty():
                 command = self.q_rec.get(block=False, timeout= None)
@@ -81,66 +91,67 @@ class SpeechThread(Thread):
 
                     # text to lower case
                     txt = self.text.lower().strip()
+                    print("Recognized phrase: "+ txt)
                     
                     try:      
                         # Voice commands to control Pepper position and the GUI
-                        if txt == 'move forward' or txt == 'go forward' or txt == 'forward':
+                        if 'move forward' in txt or 'go forward' in txt:
                             x = d
                             y = 0.0
                             theta = 0.0
                             self.motion.moveTo(x, y, theta, t)
                             
-                        elif txt == 'move backwards' or txt == 'go backwards' or\
-                            txt == 'move backward' or txt == 'go backward' or\
-                            txt == 'move back' or txt == 'go back' or txt == 'back':
+                        elif 'move backwards' in txt or 'go backwards' in txt or\
+                             'move backward' in txt or 'go backward' in txt or\
+                             'move back' in txt or 'go back' in txt:
                             x = -d
                             y = 0.0
                             theta = 0.0
                             self.motion.moveTo(x, y, theta, t)
 
-                        elif txt == 'move right' or txt == 'go right' or\
-                            txt == 'move to the right' or txt == 'go to the right' or txt == 'right':
+                        elif 'move right' in txt or 'go right' in txt or\
+                             'move to the right' in txt or 'go to the right' in txt:
                             x = 0.0
                             y = -d
                             theta = 0.0                         
                             self.motion.moveTo(x, y, theta, t)
 
-                        elif txt == 'move left' or txt == 'go left' or\
-                            txt == 'move to the left' or txt == 'go to the left' or txt == 'left':
+                        elif 'move left' in txt or 'go left' in txt or\
+                             'move to the left' in txt or 'go to the left' in txt:
                             x = 0.0
                             y = d
                             theta = 0.0
                             self.motion.moveTo(x, y, theta, t)
                             
-                        elif txt == 'rotate left' or txt == 'turn left':
+                        elif 'rotate left' in txt or 'turn left' in txt:
                             x = 0.0
                             y = 0.0
                             
                             theta = angle    
                             self.motion.moveTo(x, y, theta, t)
                         
-                        elif txt == 'rotate right' or txt == 'turn right':
+                        elif 'rotate right' in txt or 'turn right' in txt: 
                             x = 0.0
                             y = 0.0
                             theta = -angle
                             self.motion.moveTo(x, y, theta, t)
                         
-                        elif txt == 'turn around':
+                        elif 'turn around' in txt:
                             x = 0.0
                             y = 0.0
                             theta = math.pi
                             self.motion.moveTo(x, y, theta, t)
                             
-                        elif txt == 'stop talking':
+                        elif 'stop talking' in txt:
                             self.q_button.put(txt)
                         
-                        elif txt == 'start pepper' or txt == 'start robot' or txt == 'start moving':
+                        elif 'start pepper' in txt or 'start robot' in txt or 'start moving' in txt:
                             self.q_button.put('start pepper')
                         
-                        elif txt == 'stop pepper' or txt == 'stop robot' or txt == 'stop moving':
+                        elif 'stop pepper' in txt or 'stop robot' in txt or 'stop moving' in txt:
                             self.q_button.put('stop pepper') 
                         
-                        elif txt == 'watch right' or txt == 'look right' or txt == 'luke wright' or txt == 'look to the right':
+                        elif 'watch right' in txt or 'look right' in txt or 'look to the right' in txt:
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -155,8 +166,9 @@ class SpeechThread(Thread):
                             # self.motion.setStiffnesses("HeadPitch", 1)
                             names = ['HeadYaw']
                             angles = [-angle]
-                            self.motion.setAngles(names, angles, 0.15)     
-                        elif txt == 'watch left' or txt == 'look left' or txt == 'look to the left' or txt=="luke left":
+                            self.motion.setAngles(names, angles, 0.15)   
+                              
+                        elif 'watch left' in txt or 'look left' in txt or 'look to the left' in txt:
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -172,7 +184,7 @@ class SpeechThread(Thread):
                             angles = [angle]
                             self.motion.setAngles(names, angles, 0.15)   
                             
-                        elif txt == 'watch up' or txt == 'look up' or txt == "luke up":
+                        elif 'watch up' in txt or 'look up' in txt:
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -189,7 +201,7 @@ class SpeechThread(Thread):
                             angles = [-angle/2]
                             self.motion.setAngles(names, angles, 0.15)    
                             
-                        elif txt == 'watch down' or txt == 'look down' or txt == "luke down":
+                        elif 'watch down' in txt or 'look down' in txt:
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -205,7 +217,8 @@ class SpeechThread(Thread):
                             angles = [angle/2]
                             self.motion.setAngles(names, angles, 0.15)    
                         
-                        elif txt == 'watch ahead' or txt == 'look ahead' or txt == "luke ahead" or txt == "look forward" or txt == "watch forward":
+                        elif 'watch ahead' in txt or 'look ahead' in txt or\
+                             'look forward' in txt or 'watch forward' in txt:
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -222,7 +235,7 @@ class SpeechThread(Thread):
                             angles = [0, 0]
                             self.motion.setAngles(names, angles, 0.15)    
                             
-                        elif txt =="track arm" or txt == "follow arm" or txt=="truck arm" or txt == "truck art"  or txt == "track art" or txt == "hollow armor" or txt=="hollow arm":
+                        elif 'track arm' in txt or 'follow arm' in txt or 'truck arm' in txt:
                             self.text = "follow arm"
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
@@ -231,16 +244,17 @@ class SpeechThread(Thread):
                             if not self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.set()
                             
-                        elif txt =="stop tracking" or txt == "stop following" or txt == "stop arm tracking" or txt == "stop arm following":
+                        elif 'stop tracking' in txt or 'stop following' in txt or\
+                             'stop arm tracking' in txt or 'stop arm following' in txt:
                             if self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.clear()
                             
-                        elif txt =="track user" or txt == "truck user":
+                        elif 'track user' in txt or 'truck user' in txt:
                             if self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.clear()
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
                             
-                        elif txt == 'stop focus':
+                        elif 'stop focus' in txt:
                             self.life_service.stopAll()
                         else:
                             if self.session.isConnected():
@@ -269,20 +283,18 @@ class SpeechThread(Thread):
     #
     #  Record voice from microphone and recognize it using Google Speech Recognition
     def recognize(self):
-        
+        # print("Energythresh speechThread:",self.r.energy_threshold)
         with sr.Microphone(device_index=1) as source:  
-            # print(source.list_working_microphones())
-            # print(source.list_microphone_names())
-            # print(source.device_index)
-            # self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 1 second to calibrate the energy threshold for ambient noise levels
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=None)
+                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=3)
 
                 # received audio data, recognize it using Google Speech Recognition
-                # recognized_text = self.r.recognize_google(self.audio, language="en-EN")
-                recognized_text = self.r.recognize_google_cloud(self.audio, credentials_json= GOOGLE_CLOUD_SPEECH_CREDENTIALS)
+                # recognized_text = self.r.recognize_google(self.audio, language="en-US")
+                recognized_text = self.r.recognize_google_cloud(self.audio,
+                                                                preferred_phrases=PREFERRED_PHRASES,
+                                                                credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS)
                 
             except sr.WaitTimeoutError:
                 pass
@@ -290,6 +302,8 @@ class SpeechThread(Thread):
                 pass
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
+            # except Exception as e:
+            #     print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
         return recognized_text
     

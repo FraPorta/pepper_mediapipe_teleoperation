@@ -85,8 +85,8 @@ class HandsUtils(object):
             if angle > 172.0:
                 fingers_opened.append(1)
                 
-            cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            # cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         
         if len(fingers_closed) > 2:
             hand_closed = True

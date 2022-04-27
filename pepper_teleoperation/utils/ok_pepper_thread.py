@@ -13,6 +13,7 @@ from threading import Thread
 import credentials
 
 GOOGLE_CLOUD_SPEECH_CREDENTIALS = credentials.GOOGLE_CLOUD_SPEECH_CREDENTIALS
+PREFERRED_PHRASES = ["connect", "start talking", "start moving", "stop moving"]
 
 class OkPepperThread(Thread):
     def __init__(self, q_button, q_stop):
@@ -26,6 +27,9 @@ class OkPepperThread(Thread):
         
         # Speech recognizer  
         self.r = sr.Recognizer()
+        self.r.energy_threshold = 1000
+        self.r.dynamic_energy_threshold = True
+        self.r.pause_threshold = 0.5
         
         # Call the Thread class's init function
         Thread.__init__(self)
@@ -34,7 +38,6 @@ class OkPepperThread(Thread):
     
     # Override the run() function of Thread class
     def run(self):
-        # self.r.adjust_for_ambient_noise(source, duration=0.5)  # listen for 0.5 second to calibrate the energy threshold for ambient noise levels
         while self.is_running:
             if not self.q_stop.empty():
                 command = self.q_stop.get(block=False, timeout= None)
@@ -47,22 +50,21 @@ class OkPepperThread(Thread):
                     self.rec = False
                     self.is_running = False
                     
-            
             if self.rec:
                 self.text = self.recognize()
                 if self.text is not None:
                     # text to lower case
                     txt = self.text.lower().strip()
-                    print(txt)
+                    print("Recognized phrase: "+ txt)
                     
                     # Voice commands for the buttons
-                    if txt == 'connect':
+                    if 'connect' in txt:
                         self.q_button.put(txt)
-                    elif txt == 'start talking':
+                    elif 'start talking' in txt:
                         self.q_button.put(txt)
-                    elif txt == 'start pepper' or txt == 'start robot' or txt == 'start moving':
+                    elif 'start pepper' in txt or 'start robot' in txt or 'start moving' in txt:
                         self.q_button.put('start pepper')
-                    elif txt == 'stop robot' or txt == 'stop pepper' or txt == 'stop moving':
+                    elif 'stop robot' in txt or 'stop pepper' in txt or 'stop moving' in txt:
                         self.q_button.put('stop pepper')
 
             else:
@@ -75,23 +77,26 @@ class OkPepperThread(Thread):
     #
     #  Record voice from microphone and recognize it using Google Speech Recognition
     def recognize(self):
-        # print(self.list_working_microphones())
+        # print("Energythresh OKPEpper:",self.r.energy_threshold)
         with sr.Microphone(device_index=1) as source:  
             
             recognized_text = None
             try:
                 # Receive audio from microphone
-                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=None)
+                self.audio = self.r.listen(source, timeout=None, phrase_time_limit=2)
                 
                 # received audio data, recognize it using Google Speech Recognition
-                # recognized_text = self.r.recognize_google(self.audio, language="en-EN")
-                recognized_text = self.r.recognize_google_cloud(self.audio, credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS)
+                recognized_text = self.r.recognize_google_cloud(self.audio,
+                                                                preferred_phrases=PREFERRED_PHRASES,
+                                                                credentials_json=GOOGLE_CLOUD_SPEECH_CREDENTIALS)
             except sr.WaitTimeoutError:
                 pass
             except sr.UnknownValueError:
                 pass
             except sr.RequestError as e:
                 print("Could not request results from Google Speech Recognition service; {0}".format(e))
+            # except Exception as e:
+            #     print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
         return recognized_text
         

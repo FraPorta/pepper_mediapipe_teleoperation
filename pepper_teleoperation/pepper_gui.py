@@ -1,3 +1,4 @@
+from concurrent.futures import process
 import Tkinter as tk
 # import ttk
 # import argparse
@@ -522,7 +523,8 @@ class PepperGui:
     #
     #  Stop speech recognition thread and close the window
     def on_closing(self):
-        os.kill(self.p_mediapipe.pid, signal.CTRL_BREAK_EVENT)
+        if self.p_mediapipe:
+            os.kill(self.p_mediapipe.pid, signal.CTRL_BREAK_EVENT)
         
         # Stop the two Speech Recognition Threads
         self.q_record.put("StopRun")
@@ -613,8 +615,8 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    process = init_mediapipe()
-    
+    # process = init_mediapipe()
+    process = None
     # Start naoqi session
     session = qi.Session()
     

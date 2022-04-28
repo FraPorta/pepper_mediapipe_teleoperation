@@ -91,16 +91,16 @@ class PlotAngles:
         time_samples = time_samples[self.trim_start:self.trim_end:]
         
         if len(time_samples) == len(data):
-            axs[pos[1]].plot(time_samples, data)
+            axs[pos[1]].plot(time_samples, data, color=self.green)
             axs[pos[1]].set(xlabel='time [s]', ylabel='Angle [rad]')
             axs[pos[1]].set_title(name[5:8:])
             
         if len(time_samples) == len(data_filt):
-            axs[pos[1]].plot(time_samples, data_filt, color='#215fa6')
+            axs[pos[1]].plot(time_samples, data_filt, color=self.blu)
             # axs[pos_x, pos_y].legend(['signal', 'filtered'])
         
         if len(time_samples) == len(data_robot):
-            axs[pos[1]].plot(time_samples, data_robot, color='#e37632', linestyle='dashed')
+            axs[pos[1]].plot(time_samples, data_robot, color=self.orange, linestyle='dashed')
             axs[pos[1]].legend(['signal', 'filtered', 'robot'])
             # axs[pos[1]].legend(['Human', 'Robot'])
     
@@ -122,16 +122,16 @@ class PlotAngles:
         time_samples = time_samples[self.trim_start:self.trim_end:]
         
         if len(time_samples) == len(data):
-            axs.plot(time_samples, data)
+            axs.plot(time_samples, data, color=self.green)
             axs.set(xlabel='time [s]', ylabel='Angle [rad]')
             axs.set_title(name[5:8:])
             
         if len(time_samples) == len(data_filt):
-            axs.plot(time_samples, data_filt, color='#215fa6')
+            axs.plot(time_samples, data_filt, color=self.blu)
             # axs[pos_x, pos_y].legend(['signal', 'filtered'])
         
         if len(time_samples) == len(data_robot):
-            axs.plot(time_samples, data_robot, color='#e37632', linestyle='dashed')
+            axs.plot(time_samples, data_robot, color=self.orange, linestyle='dashed')
             axs.legend(['signal', 'filtered', 'robot'])
             # axs.legend(['Human', 'Robot'])            
             
@@ -187,9 +187,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, default="21_09_2021_12-02-03_Milla3",
                         help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
-    parser.add_argument("--n_plots", type=int, default="4",
+    parser.add_argument("--n_plots", type=int, default="2",
                         help="Insert number of angles you want to display")
-    parser.add_argument("--init", type=int, default="0",
+    parser.add_argument("--init", type=int, default="8",
                         help="Insert number of the first angle you want to display")
 
 
@@ -198,11 +198,11 @@ if __name__ == '__main__':
     # path = "angles_data/" + "17_09_2021_12-02-21_Marco1"
     # path = "angles_data/" + "17_09_2021_12-08-18_Marco2"
     # path = "angles_data/" + "17_09_2021_12-17-50_Marco3"
-    path = "angles_data/" + "08_03_2022_17-47-03"
+    path = "angles_data/" + "28_04_2022_18-46-36"
     n_subplots = args.n_plots
     init = args.init
     trim_start = 50
-    trim_end = 100
+    trim_end = 10000
     pa = PlotAngles(path, n_subplots, init, trim_start, trim_end)
     pa.run()
     

@@ -27,7 +27,10 @@ class PepperApproachControl(Thread):
     # Class initialization: connect to Pepper robot
     def __init__(self, session, show_plot, approach_requested, approach_only, queue_in, queue_out):
         
-        self.LShoulderPitch = self.LShoulderRoll = self.LElbowYaw = self.LElbowRoll = self.RShoulderPitch = self.RShoulderRoll = self.RElbowYaw = self.RElbowRoll = self.HipPitch = None
+        self.LShoulderPitch = self.LShoulderRoll = self.LElbowYaw = self.LElbowRoll =\
+        self.RShoulderPitch = self.RShoulderRoll = self.RElbowYaw = self.RElbowRoll =\
+        self.HipPitch = self.HeadYaw = self.HeadPitch = None
+        
         self.session = session
         self.show_plot = show_plot
         self.approach_requested = approach_requested
@@ -89,7 +92,7 @@ class PepperApproachControl(Thread):
     ##  function saturate_angles
     #
     #   Saturate angles before using them for controlling Pepper joints
-    def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HP):
+    def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HEY, HEP):
         # global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
         # limit percentage for some angles 
         limit = 0.9
@@ -168,15 +171,33 @@ class PepperApproachControl(Thread):
             self.RElbowRoll = 0.0087
         elif RER > 1.5620:
             self.RElbowRoll = 1.5620
+            
+        # HeadYaw saturation -2.0857 to 2.0857
+        if HEY is None:
+            # RElbowRoll = mProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Actuator/Value")
+            self.HeadYaw = mProxy.getData("Device/SubDeviceList/HeadYaw/Position/Sensor/Value")
+        elif HEY < -2.0857:
+            self.HeadYaw = -2.0857
+        elif HEY > 2.0857:
+            self.HeadYaw = 2.0857
+        
+        # HeadPitch saturation -0.7068 to 0.4451
+        if HEP is None:
+            # RElbowRoll = mProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Actuator/Value")
+            self.HeadPitch = mProxy.getData("Device/SubDeviceList/HeadPitch/Position/Sensor/Value")
+        elif HEP < -0.7068:
+            self.HeadPitch = -0.7068
+        elif HEP > 0.4451:
+            self.HeadPitch = 0.4451
 
-        # HipPitch saturation: -1.0385 to 1.0385
-        if HP is None:
-            # HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
-            self.HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value")
-        elif HP < -1.0385:
-            self.HipPitch = -1.0385
-        elif HP > 1.0385:
-            self.HipPitch = 1.0385
+        # # HipPitch saturation: -1.0385 to 1.0385
+        # if HP is None:
+        #     # HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
+        #     self.HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value")
+        # elif HP < -1.0385:
+        #     self.HipPitch = -1.0385
+        # elif HP > 1.0385:
+        #     self.HipPitch = 1.0385
         
 
     ##  function save_data
@@ -274,10 +295,11 @@ class PepperApproachControl(Thread):
         
         motion_service.setStiffnesses("HipPitch", stiffness)
         
+        motion_service.setStiffnesses("HeadPitch", stiffness)
+        motion_service.setStiffnesses("HeadYaw", stiffness)
+         
         # Disable external collision protection
         motion_service.setExternalCollisionProtectionEnabled("Arms", False)
-        
-        
         
         # Initialize class KeypointsToAngles
         KtA = KeypointsToAngles()
@@ -312,11 +334,14 @@ class PepperApproachControl(Thread):
         z_RER = signal.lfilter_zi(b, a)  
         
         # Hip filter parameters
-        cutoff = 0.3    # desired cutoff frequency of the filter, Hz 
-        order = 2       # filter order
+        cutoff = 1.0   # desired cutoff frequency of the filter, Hz 
+        order = 3    # filter order
         
-        b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
-        z_HP = signal.lfilter_zi(b_HP, a_HP)   
+        b_H, a_H = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
+        z_HEY = signal.lfilter_zi(b_H, a_H)  
+        z_HEP = signal.lfilter_zi(b_H, a_H)  
+        # b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
+        # z_HP = signal.lfilter_zi(b_HP, a_HP)   
         
         # Initialize arrays to store angles for plots
         # Left arm
@@ -347,6 +372,14 @@ class PepperApproachControl(Thread):
         RER_arr_filt = []
         RER_arr_robot = []
         
+        # Head
+        HEY_arr = []
+        HEY_arr_filt = []
+        HEY_arr_robot = []
+        HEP_arr = []
+        HEP_arr_filt = []
+        HEP_arr_robot = []
+        
         # Hip
         HP_arr = []
         HP_arr_filt = []
@@ -367,7 +400,7 @@ class PepperApproachControl(Thread):
         # All joints
         names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
                  "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", \
-                 "HipPitch"]
+                 "HeadYaw", "HeadPitch"]
         
         # Speed limits for the joints
         fractionMaxSpeed = 0.5
@@ -415,6 +448,9 @@ class PepperApproachControl(Thread):
                 self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
                 self.HipPitch = KtA.get_angles(wp_dict)
                 
+                self.HeadYaw = wp_dict.get('14')
+                self.HeadPitch = wp_dict.get('13')
+                
                 # Update time elapsed and timestamp
                 t = time.time()
                 self.timestamp = datetime.now().strftime('%H:%M:%S.%f')
@@ -427,7 +463,7 @@ class PepperApproachControl(Thread):
                 # Saturate angles to avoid exceding Pepper limits
                 self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                                                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
-                                               self.HipPitch)
+                                               self.HeadYaw, self.HeadPitch)
   
                 # Store raw angles lists for plots
                 if self.show_plot: # and self.time_elapsed > 2.0:
@@ -441,7 +477,9 @@ class PepperApproachControl(Thread):
                     REY_arr.append(self.RElbowYaw)
                     RER_arr.append(self.RElbowRoll)
 
-                    HP_arr.append(self.HipPitch)
+                    HEY_arr.append(self.HeadYaw)
+                    HEP_arr.append(self.HeadPitch)
+                    # HP_arr.append(self.HipPitch)
                 
                 ### REAL-TIME DATA FILTERING ###
                 # Filter data with Butterworth filter
@@ -454,8 +492,11 @@ class PepperApproachControl(Thread):
                 self.RShoulderRoll, z_RSR = signal.lfilter(b, a, [self.RShoulderRoll], zi=z_RSR)
                 self.RElbowYaw, z_REY = signal.lfilter(b, a, [self.RElbowYaw], zi=z_REY)
                 self.RElbowRoll, z_RER = signal.lfilter(b, a, [self.RElbowRoll], zi=z_RER)
-
-                self.HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [self.HipPitch], zi=z_HP)
+                
+                self.HeadYaw, z_HEY = signal.lfilter(b_H, a_H, [self.HeadYaw], zi=z_HEY)
+                self.HeadPitch, z_HEP = signal.lfilter(b_H, a_H, [self.HeadPitch], zi=z_HEP)
+                
+                # self.HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [self.HipPitch], zi=z_HP)
                 
                 # Store filtered angles for plots
                 if self.show_plot: # and self.time_elapsed > 2.0:
@@ -469,7 +510,9 @@ class PepperApproachControl(Thread):
                     REY_arr_filt.append(self.RElbowYaw[0])
                     RER_arr_filt.append(self.RElbowRoll[0])
                     
-                    HP_arr_filt.append(self.HipPitch[0])
+                    HEY_arr_filt.append(self.HeadYaw)
+                    HEP_arr_filt.append(self.HeadPitch)
+                    # HP_arr_filt.append(self.HipPitch[0])
                 
                 # Get hands state 
                 # rClosed, lClosed = self.define_hands_state(rHand_arr, lHand_arr)
@@ -477,15 +520,20 @@ class PepperApproachControl(Thread):
                 RHand_open = wp_dict.get('11')
                 LHand_close = wp_dict.get('10')
                 LHand_open = wp_dict.get('12')
+                
                 ### Pepper joints control ###
-                # print("HipPitch: ", self.HipPitch)
+                print("HeadYaw: ", self.HeadYaw *180 / np.pi ,"HeadPitch: ", self.HeadPitch  *180 / np.pi)
+                
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
-                          float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll)]
+                          float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), \
+                          float(self.HeadYaw), float(self.HeadPitch)
+                         ]
 
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
-                    motion_service.setAngles(names[:-1], angles, fractionMaxSpeed)
+                    motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
+                    motion_service.setAngles(names[-2:], angles[-2:], 0.8)
                     # motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
                 # if rClosed:
@@ -518,7 +566,8 @@ class PepperApproachControl(Thread):
                     REY_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowYaw/Position/Sensor/Value"))
                     RER_arr_robot.append(memProxy.getData("Device/SubDeviceList/RElbowRoll/Position/Sensor/Value"))
 
-                    HP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value"))
+                    HEY_arr_robot.append(memProxy.getData("Device/SubDeviceList/HeadYaw/Position/Sensor/Value"))
+                    HEP_arr_robot.append(memProxy.getData("Device/SubDeviceList/HeadPitch/Position/Sensor/Value"))
 
                 # Check if the queue was updated
                 if not self.queue_in.empty():
@@ -564,7 +613,8 @@ class PepperApproachControl(Thread):
             self.save_data(REY_arr, REY_arr_filt, REY_arr_robot, 'REY', time_arr, path)
             self.save_data(RER_arr, RER_arr_filt, RER_arr_robot, 'RER', time_arr, path)
 
-            self.save_data(HP_arr,  HP_arr_filt,  HP_arr_robot,  'HP',  time_arr, path)
+            self.save_data(HEY_arr, HEY_arr_filt, HEY_arr_robot, 'HEY', time_arr, path)
+            self.save_data(HEP_arr, HEP_arr_filt, HEP_arr_robot, 'HEP', time_arr, path)
             
             with open(path + '/timestamps_start_loop.csv', 'w') as f: 
                 write = csv.writer(f) 

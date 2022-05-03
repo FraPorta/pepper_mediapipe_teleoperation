@@ -131,7 +131,6 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
     wp_dict['13'] = face_pose[0]
     wp_dict['14'] = face_pose[1]
     
-    print("Pitch:", wp_dict['13'], "Yaw", wp_dict['14'])
     ss.send(wp_dict)
 
 def checkLim(val, limits):
@@ -293,10 +292,10 @@ def main():
                 mp_drawing.draw_landmarks(debug_image,
                                             results.right_hand_landmarks,
                                             mp_holistic.HAND_CONNECTIONS, 
-                                            mp_drawing.DrawingSpec(color=dark_blue,
+                                            mp_drawing.DrawingSpec(color=dark_orange,
                                                                     thickness=2,
                                                                     circle_radius=4),
-                                            mp_drawing.DrawingSpec(color=blue,
+                                            mp_drawing.DrawingSpec(color=orange,
                                                                     thickness=2,
                                                                     circle_radius=2),
                                             )
@@ -314,10 +313,10 @@ def main():
                 mp_drawing.draw_landmarks(debug_image,
                                             results.left_hand_landmarks,
                                             mp_holistic.HAND_CONNECTIONS, 
-                                            mp_drawing.DrawingSpec(color=dark_orange,
+                                            mp_drawing.DrawingSpec(color=dark_blue,
                                                                     thickness=2,
                                                                     circle_radius=4),
-                                            mp_drawing.DrawingSpec(color=orange,
+                                            mp_drawing.DrawingSpec(color=blue,
                                                                     thickness=2,
                                                                     circle_radius=2),)
 
@@ -356,7 +355,7 @@ def main():
                 
                 # print("Euler: ", euler_angles[:2])  
                 
-                # # for face_landmarks in face_landmarks:
+                # for face_landmarks in face_landmarks:
                 # mp_drawing.draw_landmarks(
                 #     image=debug_image,
                 #     landmark_list=face_landmarks,
@@ -377,7 +376,7 @@ def main():
                 
                 nose_tip_2D, nose_tip_2D_extended = nose_pointer2D.squeeze().astype(int)
                 debug_image = cv.line(
-                    debug_image, nose_tip_2D, nose_tip_2D_extended, (255, 0, 0), 2
+                    debug_image, nose_tip_2D, nose_tip_2D_extended, (0, 255, 0), 4
                 )
             
             # if plot_world_landmark:

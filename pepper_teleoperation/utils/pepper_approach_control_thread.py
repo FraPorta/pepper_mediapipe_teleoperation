@@ -266,7 +266,14 @@ class PepperApproachControl(Thread):
         # Get the services ALMotion and ALRobotPosture
         motion_service  = session.service("ALMotion")
         posture_service = session.service("ALRobotPosture")
-
+        life_service = session.service("ALAutonomousLife")
+        basic_service = session.service("ALBasicAwareness")
+        
+        if life_service.getState() == "eneabled":
+            life_service.setState("disabled")
+        
+        life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
+        
         # Get the service ALMemory
         memProxy = session.service("ALMemory")
         
@@ -291,7 +298,6 @@ class PepperApproachControl(Thread):
         motion_service.setStiffnesses("RElbowRoll", stiffness)
 
         motion_service.setStiffnesses("RWristYaw", stiffness)
-        # motion_service.setStiffnesses("LWristYaw", stiffness)
         
         motion_service.setStiffnesses("HipPitch", stiffness)
         
@@ -304,14 +310,7 @@ class PepperApproachControl(Thread):
         # Initialize class KeypointsToAngles
         KtA = KeypointsToAngles()
 
-        # # Filter parameters (Openpose)
-        # fs = 5.3            # sample rate, Hz
-        # nyq = 0.5 * fs      # Nyquist Frequency
-        
-        # cutoff = 0.7        # desired cutoff frequency of the filter, Hz 
-        # order = 1           # filter order
-        # normal_cutoff = cutoff / nyq    # Cutoff freq for lowpass filter
-        
+        # Filter parameters
         fs = 9.3            # sample rate, Hz
         nyq = 0.5 * fs      # Nyquist Frequency
         
@@ -333,13 +332,14 @@ class PepperApproachControl(Thread):
         z_REY = signal.lfilter_zi(b, a)   
         z_RER = signal.lfilter_zi(b, a)  
         
-        # Hip filter parameters
-        cutoff = 1.0   # desired cutoff frequency of the filter, Hz 
-        order = 3    # filter order
+        # Head filter parameters
+        cutoff = 0.3   # desired cutoff frequency of the filter, Hz 
+        order = 1    # filter order
         
         b_H, a_H = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
         z_HEY = signal.lfilter_zi(b_H, a_H)  
         z_HEP = signal.lfilter_zi(b_H, a_H)  
+        
         # b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
         # z_HP = signal.lfilter_zi(b_HP, a_HP)   
         
@@ -381,9 +381,9 @@ class PepperApproachControl(Thread):
         HEP_arr_robot = []
         
         # Hip
-        HP_arr = []
-        HP_arr_filt = []
-        HP_arr_robot = []
+        # HP_arr = []
+        # HP_arr_filt = []
+        # HP_arr_robot = []
         
         time_arr = []
         timestamp_arr_start = []
@@ -427,6 +427,8 @@ class PepperApproachControl(Thread):
             except OSError:
                 print ("Creation of the directory %s failed" % path)
         
+        self.loop_num = 0
+        
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
             try:  
@@ -435,9 +437,6 @@ class PepperApproachControl(Thread):
                 
                 # Get keypoints from OpenPose
                 wp_dict = KtA.get_keypoints()  
-                
-                # rHand_arr.append(wp_dict.get('9'))
-                # rHand_arr.append(wp_dict.get('10'))
                 
                 if self.show_plot:
                     #    Save received keypoints
@@ -515,15 +514,12 @@ class PepperApproachControl(Thread):
                     # HP_arr_filt.append(self.HipPitch[0])
                 
                 # Get hands state 
-                # rClosed, lClosed = self.define_hands_state(rHand_arr, lHand_arr)
                 RHand_close = wp_dict.get('9')
                 RHand_open = wp_dict.get('11')
                 LHand_close = wp_dict.get('10')
                 LHand_open = wp_dict.get('12')
                 
                 ### Pepper joints control ###
-                print("HeadYaw: ", self.HeadYaw *180 / np.pi ,"HeadPitch: ", self.HeadPitch  *180 / np.pi)
-                
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
                           float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), \
@@ -532,8 +528,15 @@ class PepperApproachControl(Thread):
 
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
+                    # Upper body control
                     motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
-                    motion_service.setAngles(names[-2:], angles[-2:], 0.8)
+                    
+                    # Head_movement every x iterations
+                    # if self.loop_num % 1 == 0:
+                    
+                    # Head control
+                    motion_service.setAngles(names[-2:], angles[-2:], 0.1)
+                        
                     # motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
                 # if rClosed:
@@ -576,7 +579,9 @@ class PepperApproachControl(Thread):
                 # if self.time_elapsed > 2.0:
                 # fill timestamp array of the end loop
                 timestamp_arr_end.append(datetime.now().strftime('%H:%M:%S.%f'))
-            
+                
+                self.loop_num += 1
+                
             # If the user stops the script with CTRL+C, interrupt loop
             except KeyboardInterrupt:
                 self.loop_interrupted = True
@@ -665,49 +670,3 @@ if __name__ == "__main__":
     pac.start()
     
     pac.join()
-    
-    
-    
-    # ##  function plot_data
-    # #
-    # #   Plot raw and filtered angles at the end of the session
-    # def plot_data(self, axs, raw_data, filt_data, robot_data, name, time_elapsed, pos_x, pos_y, plot_PS=False):
-    #     # Plot time signals (Raw and filtered)
-    #     data = np.array(raw_data)
-    #     N_samples = len(data)
-    #     sampling_rate = N_samples/time_elapsed
-    #     time_samples = np.arange(0, time_elapsed, 1/sampling_rate)
-        
-    #     if len(raw_data) > len(filt_data):
-    #         filt_data.append(0.0)
-    #     data_filt = np.array(filt_data)
-        
-    #     if len(raw_data) > len(robot_data):
-    #         robot_data.append(0.0)
-    #     data_robot = np.array(robot_data)
-        
-    #     '''
-    #     if plot_PS:
-    #         # POWER SPECTRUM
-    #         fourier_transform = np.fft.rfft(data)
-    #         abs_fourier_transform = np.abs(fourier_transform)
-    #         power_spectrum = np.square(abs_fourier_transform)
-    #         frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-    #         if len(frequency) == len(power_spectrum):
-    #             axs[0].plot(frequency, power_spectrum)
-    #             axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-    #             axs[0].set_title('Power Spectrum')
-    #     '''
-        
-    #     if len(time_samples) == len(data):
-    #         axs[pos_x, pos_y].plot(time_samples, data)
-    #         axs[pos_x, pos_y].set(xlabel='time [s]', ylabel='Angle [rad]')
-    #         axs[pos_x, pos_y].set_title('%s angle' % name)
-            
-    #     if len(time_samples) == len(data_filt):
-    #         axs[pos_x, pos_y].plot(time_samples, data_filt)
-    #         # axs[pos_x, pos_y].legend(['signal', 'filtered'])
-        
-    #     if len(time_samples) == len(data_robot):
-    #         axs[pos_x, pos_y].plot(time_samples, data_robot)
-    #         axs[pos_x, pos_y].legend(['signal', 'filtered', 'robot'])

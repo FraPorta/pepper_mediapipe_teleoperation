@@ -26,7 +26,8 @@ class PlotAngles:
                     6: (3,2),
                     7: (4,2),
                     8: (4,2),
-                    9: (5,2)} 
+                    9: (5,2),
+                    10:(5,2)} 
                     
         self.pos = {0: (0,0),
                     1: (0,1),
@@ -36,7 +37,9 @@ class PlotAngles:
                     5: (2,1),
                     6: (3,0),
                     7: (3,1),
-                    8: (4,0)}
+                    8: (4,0),
+                    9: (4,1)
+                    }
         
         self.green = "#14c417"
         self.orange = "#e37632"
@@ -143,10 +146,10 @@ class PlotAngles:
         files_list = [f for f in os.listdir(self.path) if isfile(join(self.path, f)) and 'data' in f]
         files_list.reverse()
         
-        if self.n > 9:
-            self.n = 9
-        if self.init > 8:
-            self.init = 8
+        if self.n > 10:
+            self.n = 10
+        if self.init > 9:
+            self.init = 9
             
         files_list = files_list[self.init:self.end:]
         
@@ -187,35 +190,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, default="21_09_2021_12-02-03_Milla3",
                         help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
-    parser.add_argument("--n_plots", type=int, default="2",
+    parser.add_argument("--n_plots", type=int, default="10",
                         help="Insert number of angles you want to display")
-    parser.add_argument("--init", type=int, default="8",
+    parser.add_argument("--init", type=int, default="0",
                         help="Insert number of the first angle you want to display")
 
 
     args = parser.parse_args()
     # path = "angles_data/" + args.path
-    # path = "angles_data/" + "17_09_2021_12-02-21_Marco1"
-    # path = "angles_data/" + "17_09_2021_12-08-18_Marco2"
-    # path = "angles_data/" + "17_09_2021_12-17-50_Marco3"
-    path = "angles_data/" + "28_04_2022_18-46-36"
+    path = "angles_data/" + "03_05_2022_17-16-01"
+    
     n_subplots = args.n_plots
     init = args.init
     trim_start = 50
     trim_end = 10000
     pa = PlotAngles(path, n_subplots, init, trim_start, trim_end)
     pa.run()
-    
-    
-    
-'''
-# POWER SPECTRUM
-fourier_transform = np.fft.rfft(data)
-abs_fourier_transform = np.abs(fourier_transform)
-power_spectrum = np.square(abs_fourier_transform)
-frequency = np.linspace(0, sampling_rate/2, len(power_spectrum))
-if len(frequency) == len(power_spectrum):
-    axs[0].plot(frequency, power_spectrum)
-    axs[0].set(xlabel='frequency [1/s]', ylabel='power')
-    axs[0].set_title('Power Spectrum')
-'''

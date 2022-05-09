@@ -239,24 +239,17 @@ class PepperApproachControl(Thread):
             f.write(str(temp_dict))
             f.write("\n")
     
-    def define_hands_state(self, rHand_arr, lHand_arr):
-        check_length = 2
-        rHand_closed = False
-        lHand_closed = False
-        if rHand_arr:
-            if len(rHand_arr) >= check_length:
-                # check last [check_length] values 
-                if rHand_arr[-check_length:].count(True) == check_length:
-                    rHand_closed = True
+    def disable_autonomous_abilities(self, life_s, basic_s):
+        life_s.setAutonomousAbilityEnabled("BasicAwareness", False)
+        life_s.setAutonomousAbilityEnabled("BackgroundMovement", False)
+        life_s.setAutonomousAbilityEnabled("ListeningMovement", False)
+        life_s.setAutonomousAbilityEnabled("SpeakingMovement", False)
+        basic_s.setEnabled(False)
         
-        if lHand_arr:
-            if len(lHand_arr) >= check_length:
-                # check last [check_length] values 
-                if lHand_arr[-check_length:].count(True) == check_length:
-                    lHand_closed = True
+        # face_s.setTrackingEnabled(False)
+        # face_s.setRecognitionEnabled(False)
+        # face_s.clearDatabase()
         
-        return rHand_closed, lHand_closed
-
     ##  function joints_control
     #
     #   This function uses the setAngles and setStiffnesses methods
@@ -268,14 +261,20 @@ class PepperApproachControl(Thread):
         posture_service = session.service("ALRobotPosture")
         life_service = session.service("ALAutonomousLife")
         basic_service = session.service("ALBasicAwareness")
-        
-        if life_service.getState() == "eneabled":
-            life_service.setState("disabled")
-        
-        life_service.setAutonomousAbilityEnabled("BasicAwareness", False)
-        
-        # Get the service ALMemory
+        face_service = session.service("ALFaceDetection")
+        people_service = session.service("ALPeoplePerception")
         memProxy = session.service("ALMemory")
+        
+        # Disable autonomous abilities
+        face_service.clearDatabase()
+        people_service.resetPopulation()
+        people_service.setFastModeEnabled(True) 
+        # people_service.setFaceDetectionEnabled(False)
+        people_service.setMaximumDetectionRange(0.1)
+        self.disable_autonomous_abilities(life_service, basic_service)
+        
+        if life_service.getState() != "disabled":
+            life_service.setState("disabled")
         
         # Wake up robot
         motion_service.wakeUp()
@@ -431,7 +430,7 @@ class PepperApproachControl(Thread):
         
         # Start loop to receive angles and control Pepper joints
         while KtA.start_flag and not self.loop_interrupted:
-            try:  
+            try: 
                 rClosed = False
                 lClosed = False
                 
@@ -531,9 +530,6 @@ class PepperApproachControl(Thread):
                     # Upper body control
                     motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
                     
-                    # Head_movement every x iterations
-                    # if self.loop_num % 1 == 0:
-                    
                     # Head control
                     motion_service.setAngles(names[-2:], angles[-2:], 0.1)
                         
@@ -556,6 +552,12 @@ class PepperApproachControl(Thread):
                 
                 # Mantain right wrist horizontal w. r. t. ground
                 # motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
+                
+                # print(basic_service.isRunning(), basic_service.isEnabled(), basic_service.isAwarenessPaused())
+                # print("Recognition Enabled: ", face_service.isRecognitionEnabled())
+                # print("Tracking Enabled: ", face_service.isTrackingEnabled())
+                # print("Face Detection: ",people_service.isFaceDetectionEnabled())
+                # self.disable_autonomous_abilities(life_service, basic_service, face_service)
                 
                 # Store robot angles lists for plots
                 if self.show_plot:
@@ -597,7 +599,9 @@ class PepperApproachControl(Thread):
         
         # robot go to Stand Init posture
         try:
-            posture_service.goToPosture("StandInit", 0.5)
+            pass
+            # posture_service.goToPosture("StandInit", 0.5)
+            # self.disable_autonomous_abilities(life_service, basic_service, face_service)
         except RuntimeError as e:
             print(e)
             

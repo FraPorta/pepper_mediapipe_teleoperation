@@ -77,7 +77,7 @@ class HeadMotionThread(Thread):
             stiffness = 1
             self.motion_service.setStiffnesses("HeadYaw", stiffness)
             self.motion_service.setStiffnesses("HeadPitch", stiffness)
-            
+            self.disable_autonomous_movements()
         self.first_time = False
         
         # t0 = time.time()

@@ -198,7 +198,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     # path = "angles_data/" + args.path
-    path = "angles_data/" + "03_05_2022_17-16-01"
+    path = "angles_data/" + "04_05_2022_12-15-04"
     
     n_subplots = args.n_plots
     init = args.init

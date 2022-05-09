@@ -15,6 +15,7 @@ from GUI_material.image_label import ImageLabel
 from utils.speech_thread import SpeechThread
 from utils.ok_pepper_thread import OkPepperThread
 from utils.pepper_approach_control_thread import PepperApproachControl
+from utils.skype_call import *
 from Queue import Queue
 
 
@@ -66,6 +67,8 @@ class PepperGui:
         darkest_red = '#52373b' 
         light_red = '#eb9ea0'
         orange = '#ec5633'
+        skype_blue = '#00aff0'
+        skype_dark_blue = '#015270'
 
         # Master init
         self.master.title("Pepper Control")
@@ -136,6 +139,23 @@ class PepperGui:
                                     command=self.connect_pepper)        
         self.btn_connect.pack()
         self.btn_connect.place(relx=0.4, y=448)
+        
+        # Button Skype call
+        self.btn_skype = tk.Button(self.master, 
+                                    text="Skype call",
+                                    bg=skype_blue,
+                                    fg='white',
+                                    font=(font, btn_txt_size),
+                                    activebackground=skype_dark_blue,
+                                    activeforeground='white',
+                                    width=10,
+                                    height=2,
+                                    disabledforeground="white",
+                                    anchor=tk.CENTER,
+                                    relief=tk.FLAT,
+                                    command=run_skype_thread)        
+        self.btn_skype.pack()
+        self.btn_skype.place(relx=0.1, y=448)
         
         # Gifs
         self.gif = ImageLabel(self.master)
@@ -599,7 +619,8 @@ class PepperGui:
         self.master.after(250, func=self.check_queues)
     
 def init_mediapipe():
-    script = resource_path("teleop_holistic/teleop_holistic.exe")
+    # script = resource_path("teleop_holistic/teleop_holistic.exe")
+    script = resource_path("teleop_holistic/teleop_holistic_head.exe")
     process = subprocess.Popen(script)
     return process
 
@@ -615,8 +636,8 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    # process = init_mediapipe()
-    process = None
+    process = init_mediapipe()
+    # process = None
     # Start naoqi session
     session = qi.Session()
     

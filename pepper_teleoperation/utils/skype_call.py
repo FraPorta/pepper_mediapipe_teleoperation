@@ -11,10 +11,10 @@ def make_skype_call():
     # chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
     # chrome_open = webbrowser.get(chrome_path).open_new_tab(os.path.realpath(filename))
     # if not chrome_open:
-    webbrowser.open_new(os.path.realpath(filename))
+    webbrowser.open(os.path.realpath(filename))
 
     # Wait for the browser to open
-    time.sleep(1)
+    time.sleep(1.5)
     
     # Click automatically the 'Open Skype' button 
     pyautogui.press('left')

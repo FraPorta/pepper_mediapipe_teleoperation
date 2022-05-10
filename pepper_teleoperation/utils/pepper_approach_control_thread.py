@@ -25,11 +25,11 @@ from socket_send import SocketSendSignal
 class PepperApproachControl(Thread):
     
     # Class initialization: connect to Pepper robot
-    def __init__(self, session, show_plot, approach_requested, approach_only, queue_in, queue_out):
+    def __init__(self, session, show_plot, approach_requested, approach_only, queue_in, queue_out, q_head_control):
         
         self.LShoulderPitch = self.LShoulderRoll = self.LElbowYaw = self.LElbowRoll =\
         self.RShoulderPitch = self.RShoulderRoll = self.RElbowYaw = self.RElbowRoll =\
-        self.HipPitch = self.HeadYaw = self.HeadPitch = None
+        self.HipPitch = self.HeadYaw = self.HeadPitch = self.RWristYaw = None
         
         self.session = session
         self.show_plot = show_plot
@@ -37,10 +37,12 @@ class PepperApproachControl(Thread):
         self.approach_only = approach_only
         self.time_elapsed = 0.0
         self.loop_interrupted = False
+        self.head_control = False
         
         self.queue_in = queue_in
         self.queue_out = queue_out
         
+        self.q_head_control = q_head_control
         # self.sock_send = SocketSendSignal()
   
         # Call the Thread class's init function
@@ -89,6 +91,19 @@ class PepperApproachControl(Thread):
         
         return self.au.user_approached, self.au.queue_stop 
     
+    ##  function saturate_wrist_yaw
+    #
+    #   Saturate wrist_yaw before using it for controlling Pepper joints
+    def saturate_wrist_yaw(self, mProxy, RWY):
+        # LWristYaw saturation
+        if RWY is None:
+            # LShoulderPitch = mProxy.getData("Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value")
+            self.RWristYaw = mProxy.getData("Device/SubDeviceList/RWristYaw/Position/Sensor/Value")
+        elif RWY < -1.8239:
+            self.RWristYaw = -1.8239
+        elif RWY > 1.8239:
+            self.RWristYaw = 1.8239
+            
     ##  function saturate_angles
     #
     #   Saturate angles before using them for controlling Pepper joints
@@ -524,14 +539,15 @@ class PepperApproachControl(Thread):
                           float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), \
                           float(self.HeadYaw), float(self.HeadPitch)
                          ]
-
+                # print(self.RShoulderPitch*180/np.pi)
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     # Upper body control
                     motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
                     
-                    # Head control
-                    motion_service.setAngles(names[-2:], angles[-2:], 0.1)
+                    if self.head_control:
+                        # Head control
+                        motion_service.setAngles(names[-2:], angles[-2:], 0.1)
                         
                     # motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
@@ -550,8 +566,10 @@ class PepperApproachControl(Thread):
                 else:
                     motion_service.setAngles('LHand', 0.6, fractionMaxSpeed_h)
                 
+                self.RWristYaw = -self.RElbowYaw[0] - self.RShoulderRoll[0]
+                self.saturate_wrist_yaw(memProxy, self.RWristYaw)
                 # Mantain right wrist horizontal w. r. t. ground
-                # motion_service.setAngles(["RWristYaw"], [-1.3], 0.15) 
+                motion_service.setAngles("RWristYaw", float(self.RWristYaw), 0.15) 
                 
                 # print(basic_service.isRunning(), basic_service.isEnabled(), basic_service.isAwarenessPaused())
                 # print("Recognition Enabled: ", face_service.isRecognitionEnabled())
@@ -578,6 +596,9 @@ class PepperApproachControl(Thread):
                 if not self.queue_in.empty():
                     self.loop_interrupted = self.queue_in.get(block=False, timeout=None)
                 
+                if not self.q_head_control.empty():
+                    self.head_control = self.q_head_control.get(block=False, timeout=None)
+                
                 # if self.time_elapsed > 2.0:
                 # fill timestamp array of the end loop
                 timestamp_arr_end.append(datetime.now().strftime('%H:%M:%S.%f'))
@@ -599,9 +620,7 @@ class PepperApproachControl(Thread):
         
         # robot go to Stand Init posture
         try:
-            pass
-            # posture_service.goToPosture("StandInit", 0.5)
-            # self.disable_autonomous_abilities(life_service, basic_service, face_service)
+            posture_service.goToPosture("StandInit", 0.5)
         except RuntimeError as e:
             print(e)
             

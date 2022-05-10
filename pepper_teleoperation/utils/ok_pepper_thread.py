@@ -13,7 +13,7 @@ from threading import Thread
 import credentials
 
 GOOGLE_CLOUD_SPEECH_CREDENTIALS = credentials.GOOGLE_CLOUD_SPEECH_CREDENTIALS
-PREFERRED_PHRASES = ["connect", "start talking", "start moving", "stop moving"]
+PREFERRED_PHRASES = ['connect', 'start talking', 'start moving', 'stop moving', 'call', 'skype call', 'skype']
 
 class OkPepperThread(Thread):
     def __init__(self, q_button, q_stop):
@@ -66,6 +66,8 @@ class OkPepperThread(Thread):
                         self.q_button.put('start pepper')
                     elif 'stop robot' in txt or 'stop pepper' in txt or 'stop moving' in txt:
                         self.q_button.put('stop pepper')
+                    elif 'call' in txt or 'skype call' in txt or 'skype' in txt:
+                        self.q_button.put('call')
 
             else:
                 if self.is_running: 

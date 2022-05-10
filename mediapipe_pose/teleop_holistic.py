@@ -21,11 +21,11 @@ import matplotlib.pyplot as plt
 from time import time, sleep
 
 from utils import CvFpsCalc
-from utils import KeypointsToAngles
+# from utils import KeypointsToAngles
 from utils import SocketSend
 from utils import HandsUtils
 # from utils import SocketReceiveSignal
-from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
+# from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
 
 from utils.face_geometry import(  # isort:skip
     PCF,
@@ -60,7 +60,7 @@ camera_matrix = np.array(
 
 dist_coeff = np.zeros((4, 1))
 
-keypointsToAngles = KeypointsToAngles()
+# keypointsToAngles = KeypointsToAngles()
 hu = HandsUtils()
 
 blue = (66, 135, 245)
@@ -136,49 +136,49 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
 def checkLim(val, limits):
     return val < limits[0] or val > limits[1]
 
-def do_teleop(landmarks):
-    p = []
-    for index, landmark in enumerate(landmarks.landmark):
-        p.append([landmark.x, landmark.y, landmark.z])
-    p = np.array(p)
+# def do_teleop(landmarks):
+#     p = []
+#     for index, landmark in enumerate(landmarks.landmark):
+#         p.append([landmark.x, landmark.y, landmark.z])
+#     p = np.array(p)
 
-    limitsLShoulderPitch = [-2.0857, 2.0857]
-    limitsRShoulderPitch = [-2.0857, 2.0857]
-    limitsLShoulderRoll  = [ 0.0087, 1.5620]
-    limitsRShoulderRoll  = [-1.5620,-0.0087]
-    limitsLElbowYaw      = [-2.0857, 2.0857]
-    limitsRElbowYaw      = [-2.0857, 2.0857]
-    limitsLElbowRoll     = [-1.5620,-0.0087]
-    limitsRElbowRoll     = [ 0.0087, 1.5620]
-    limitsHipPitch       = [-1.0385, 1.0385]
+#     limitsLShoulderPitch = [-2.0857, 2.0857]
+#     limitsRShoulderPitch = [-2.0857, 2.0857]
+#     limitsLShoulderRoll  = [ 0.0087, 1.5620]
+#     limitsRShoulderRoll  = [-1.5620,-0.0087]
+#     limitsLElbowYaw      = [-2.0857, 2.0857]
+#     limitsRElbowYaw      = [-2.0857, 2.0857]
+#     limitsLElbowRoll     = [-1.5620,-0.0087]
+#     limitsRElbowRoll     = [ 0.0087, 1.5620]
+#     limitsHipPitch       = [-1.0385, 1.0385]
 
-    pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
-    pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
+#     pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
+#     pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
 
-    LShoulderPitch, LShoulderRoll = keypointsToAngles.obtain_LShoulderPitchRoll_angles(pNeck, p[11], p[13], pMidHip)
-    RShoulderPitch, RShoulderRoll = keypointsToAngles.obtain_RShoulderPitchRoll_angles(pNeck, p[12], p[14], pMidHip)
+#     LShoulderPitch, LShoulderRoll = keypointsToAngles.obtain_LShoulderPitchRoll_angles(pNeck, p[11], p[13], pMidHip)
+#     RShoulderPitch, RShoulderRoll = keypointsToAngles.obtain_RShoulderPitchRoll_angles(pNeck, p[12], p[14], pMidHip)
     
-    LElbowYaw, LElbowRoll = keypointsToAngles.obtain_LElbowYawRoll_angle(pNeck, p[11], p[13], p[15])
-    RElbowYaw, RElbowRoll = keypointsToAngles.obtain_RElbowYawRoll_angle(pNeck, p[12], p[14], p[16])
+#     LElbowYaw, LElbowRoll = keypointsToAngles.obtain_LElbowYawRoll_angle(pNeck, p[11], p[13], p[15])
+#     RElbowYaw, RElbowRoll = keypointsToAngles.obtain_RElbowYawRoll_angle(pNeck, p[12], p[14], p[16])
 
-    HipPitch = keypointsToAngles.obtain_HipPitch_angles(pMidHip, pNeck) # This is switched, why?
-    # angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
+#     HipPitch = keypointsToAngles.obtain_HipPitch_angles(pMidHip, pNeck) # This is switched, why?
+#     # angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
     
 
-    # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
-    # angle_trace.append(angles)
+#     # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
+#     # angle_trace.append(angles)
 
-    if (checkLim(LShoulderPitch, limitsLShoulderPitch) or 
-        checkLim(RShoulderPitch, limitsRShoulderPitch) or
-        checkLim(LShoulderRoll, limitsLShoulderRoll) or 
-        checkLim(RShoulderRoll, limitsRShoulderRoll) or
-        checkLim(LElbowYaw, limitsLElbowYaw) or 
-        checkLim(RElbowYaw, limitsRElbowYaw) or
-        checkLim(LElbowRoll, limitsLElbowRoll) or 
-        checkLim(RElbowRoll, limitsRElbowRoll)):
-        return False
-    else:
-        return True
+#     if (checkLim(LShoulderPitch, limitsLShoulderPitch) or 
+#         checkLim(RShoulderPitch, limitsRShoulderPitch) or
+#         checkLim(LShoulderRoll, limitsLShoulderRoll) or 
+#         checkLim(RShoulderRoll, limitsRShoulderRoll) or
+#         checkLim(LElbowYaw, limitsLElbowYaw) or 
+#         checkLim(RElbowYaw, limitsRElbowYaw) or
+#         checkLim(LElbowRoll, limitsLElbowRoll) or 
+#         checkLim(RElbowRoll, limitsRElbowRoll)):
+#         return False
+#     else:
+#         return True
 
 def rotationMatrixToEulerAngles(R) :
 
@@ -386,10 +386,11 @@ def main():
             if results.pose_world_landmarks is not None:
                 cv.putText(debug_image, "TRACKING", (10, 90),
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
-                if not do_teleop(results.pose_world_landmarks):
-                    # limit reached
-                    cv.putText(debug_image, "LIMIT", (10, 140),
-                        cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
+                
+                # if not do_teleop(results.pose_world_landmarks):
+                #     # limit reached
+                #     cv.putText(debug_image, "LIMIT", (10, 140),
+                #         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
 
                 if enable_teleop:
                     socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened, euler_angles)

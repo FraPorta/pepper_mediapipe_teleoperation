@@ -33,7 +33,6 @@ class OkPepperThread(Thread):
         
         # Call the Thread class's init function
         Thread.__init__(self)
-        
         print("OkPepperThread started")
     
     # Override the run() function of Thread class

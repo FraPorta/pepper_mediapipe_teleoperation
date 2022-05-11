@@ -1,5 +1,7 @@
 # -*- encoding: UTF-8 -*-
 
+from multiprocessing import Event
+from Queue import Queue
 import qi
 from naoqi import ALProxy
 import os
@@ -18,6 +20,7 @@ from keypoints_to_angles import KeypointsToAngles
 from sensory_hub import DetectUserDepth, Person
 from approach_user_thread import ApproachUser
 from socket_send import SocketSendSignal
+from repeat_head_commands import RepeatHeadCommands
 
 ## class PepperApproachControl
 #
@@ -43,8 +46,12 @@ class PepperApproachControl(Thread):
         self.queue_out = queue_out
         
         self.q_head_control = q_head_control
-        # self.sock_send = SocketSendSignal()
-  
+        
+        self.q_commands_repeat = Queue()
+        self.e_pause_repeat = Event()
+        self.e_stop_repeat = Event()
+        self.rhc_thread = RepeatHeadCommands(self.session, self.q_commands_repeat, self.e_pause_repeat, self.e_stop_repeat)
+
         # Call the Thread class's init function
         Thread.__init__(self)
         print("PepperApproachControl thread started")
@@ -347,7 +354,7 @@ class PepperApproachControl(Thread):
         z_RER = signal.lfilter_zi(b, a)  
         
         # Head filter parameters
-        cutoff = 0.3   # desired cutoff frequency of the filter, Hz 
+        cutoff = 0.35   # desired cutoff frequency of the filter, Hz 
         order = 1    # filter order
         
         b_H, a_H = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
@@ -420,6 +427,9 @@ class PepperApproachControl(Thread):
         fractionMaxSpeed = 0.5
         fractionMaxSpeed_h = 0.3
 
+        # start thread for repeat head commands until the next one
+        self.rhc_thread.start()
+        
         print("Start controlling Pepper joints!")
         self.queue_out.put("Start controlling Pepper joints!")
         
@@ -543,13 +553,14 @@ class PepperApproachControl(Thread):
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     # Upper body control
-                    motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
+                    # motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
                     
+                    # Head control
                     if self.head_control:
-                        # Head control
-                        motion_service.setAngles(names[-2:], angles[-2:], 0.1)
+                        # motion_service.setAngles(names[-2:], angles[-2:], 0.1)
+                        # print("apprContr New Angles", angles[-2:], time.time())
+                        self.q_commands_repeat.put(angles[-2:])
                         
-                    # motion_service.setAngles(names, angles, fractionMaxSpeed)
                 # Close or open hands
                 # if rClosed:
                 if RHand_close:
@@ -570,12 +581,6 @@ class PepperApproachControl(Thread):
                 self.saturate_wrist_yaw(memProxy, self.RWristYaw)
                 # Mantain right wrist horizontal w. r. t. ground
                 motion_service.setAngles("RWristYaw", float(self.RWristYaw), 0.15) 
-                
-                # print(basic_service.isRunning(), basic_service.isEnabled(), basic_service.isAwarenessPaused())
-                # print("Recognition Enabled: ", face_service.isRecognitionEnabled())
-                # print("Tracking Enabled: ", face_service.isTrackingEnabled())
-                # print("Face Detection: ",people_service.isFaceDetectionEnabled())
-                # self.disable_autonomous_abilities(life_service, basic_service, face_service)
                 
                 # Store robot angles lists for plots
                 if self.show_plot:
@@ -598,6 +603,10 @@ class PepperApproachControl(Thread):
                 
                 if not self.q_head_control.empty():
                     self.head_control = self.q_head_control.get(block=False, timeout=None)
+                    if self.head_control:
+                        self.e_pause_repeat.set()
+                    else:
+                        self.e_pause_repeat.clear()
                 
                 # if self.time_elapsed > 2.0:
                 # fill timestamp array of the end loop
@@ -618,6 +627,7 @@ class PepperApproachControl(Thread):
                 KtA.stop_receiving()
                 # sys.exit(-1)
         
+        self.e_stop_repeat.set()
         # robot go to Stand Init posture
         try:
             posture_service.goToPosture("StandInit", 0.5)

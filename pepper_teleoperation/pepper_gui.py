@@ -54,7 +54,6 @@ class PepperGui:
         self.q_appr_teleop = Queue()
         
         self.q_head = Queue()
-        self.head_control_callback()
         # self.q_head.put(self.head_control.get())
         
         self.st = None
@@ -466,6 +465,8 @@ class PepperGui:
         
         self.c_approach.configure(state=DISABLED)
         self.c_save.configure(state=DISABLED)
+        
+        self.head_control_callback()
         
         if self.approach.get() == 1 and self.teleop.get() == 1:
             # Show gif

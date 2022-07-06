@@ -12,6 +12,7 @@ https://github.com/Kazuhito00/mediapipe-python-sample/blob/main/sample_pose.py
 
 import copy
 import argparse
+import math
 import cv2 as cv
 import numpy as np
 import mediapipe as mp
@@ -19,18 +20,47 @@ import matplotlib.pyplot as plt
 
 from time import time, sleep
 
+from utils import CvFpsCalc
+# from utils import KeypointsToAngles
+from utils import SocketSend
+from utils import HandsUtils
+# from utils import SocketReceiveSignal
+# from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
+
+from utils.face_geometry import(  # isort:skip
+    PCF,
+    get_metric_landmarks,
+    procrustes_landmark_basis,
+)
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
-from utils import CvFpsCalc
-from utils import KeypointsToAngles
-from utils import SocketSend
-from utils import HandsUtils
-# from utils import SocketReceiveSignal
-from utils import calc_bounding_rect, draw_landmarks, plot_world_landmarks, draw_bounding_rect
+mp_face_mesh = mp.solutions.face_mesh
+drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=3)
 
-keypointsToAngles = KeypointsToAngles()
+points_idx = [33, 263, 61, 291, 199]
+points_idx = points_idx + [key for (key, val) in procrustes_landmark_basis]
+points_idx = list(set(points_idx))
+points_idx.sort()
+
+# uncomment next line to use all points for PnP algorithm
+# points_idx = list(range(0,468)); points_idx[0:2] = points_idx[0:2:-1];
+
+frame_height, frame_width, channels = (720, 1280, 3)
+
+# pseudo camera internals
+focal_length = frame_width
+center = (frame_width / 2, frame_height / 2)
+camera_matrix = np.array(
+    [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
+    dtype="double",
+)
+
+dist_coeff = np.zeros((4, 1))
+
+# keypointsToAngles = KeypointsToAngles()
 hu = HandsUtils()
 
 blue = (66, 135, 245)
@@ -55,7 +85,7 @@ def get_args():
     parser.add_argument("--min_detection_confidence",
                         help='min_detection_confidence',
                         type=float,
-                        default=0.8)
+                        default=0.5)
     parser.add_argument("--min_tracking_confidence",
                         help='min_tracking_confidence',
                         type=float,
@@ -71,7 +101,7 @@ def get_args():
     return args
 
 
-def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened):
+def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened, face_pose):
     p = []
     for landmark in landmarks.landmark:
         p.append([landmark.x, landmark.y, landmark.z])
@@ -79,9 +109,6 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
 
     pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
     pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
-
-    # pNeck =   0.5 * (p[11] + p[12])
-    # pMidHip = 0.5 * (p[23] + p[24])
     
     wp_dict = {}
 
@@ -101,55 +128,77 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
     wp_dict['10'] = lHand_closed
     wp_dict['11'] = rHand_opened
     wp_dict['12'] = lHand_opened
- 
+    wp_dict['13'] = face_pose[0]
+    wp_dict['14'] = face_pose[1]
+    
     ss.send(wp_dict)
 
 def checkLim(val, limits):
     return val < limits[0] or val > limits[1]
 
-def do_teleop(landmarks):
-    p = []
-    for index, landmark in enumerate(landmarks.landmark):
-        p.append([landmark.x, landmark.y, landmark.z])
-    p = np.array(p)
+# def do_teleop(landmarks):
+#     p = []
+#     for index, landmark in enumerate(landmarks.landmark):
+#         p.append([landmark.x, landmark.y, landmark.z])
+#     p = np.array(p)
 
-    limitsLShoulderPitch = [-2.0857, 2.0857]
-    limitsRShoulderPitch = [-2.0857, 2.0857]
-    limitsLShoulderRoll  = [ 0.0087, 1.5620]
-    limitsRShoulderRoll  = [-1.5620,-0.0087]
-    limitsLElbowYaw      = [-2.0857, 2.0857]
-    limitsRElbowYaw      = [-2.0857, 2.0857]
-    limitsLElbowRoll     = [-1.5620,-0.0087]
-    limitsRElbowRoll     = [ 0.0087, 1.5620]
-    limitsHipPitch       = [-1.0385, 1.0385]
+#     limitsLShoulderPitch = [-2.0857, 2.0857]
+#     limitsRShoulderPitch = [-2.0857, 2.0857]
+#     limitsLShoulderRoll  = [ 0.0087, 1.5620]
+#     limitsRShoulderRoll  = [-1.5620,-0.0087]
+#     limitsLElbowYaw      = [-2.0857, 2.0857]
+#     limitsRElbowYaw      = [-2.0857, 2.0857]
+#     limitsLElbowRoll     = [-1.5620,-0.0087]
+#     limitsRElbowRoll     = [ 0.0087, 1.5620]
+#     limitsHipPitch       = [-1.0385, 1.0385]
 
-    pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
-    pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
+#     pNeck =   (0.5 * (np.array(p[11]) + np.array(p[12]))).tolist()
+#     pMidHip = (0.5 * (np.array(p[23]) + np.array(p[24]))).tolist()
 
-    LShoulderPitch, LShoulderRoll = keypointsToAngles.obtain_LShoulderPitchRoll_angles(pNeck, p[11], p[13], pMidHip)
-    RShoulderPitch, RShoulderRoll = keypointsToAngles.obtain_RShoulderPitchRoll_angles(pNeck, p[12], p[14], pMidHip)
+#     LShoulderPitch, LShoulderRoll = keypointsToAngles.obtain_LShoulderPitchRoll_angles(pNeck, p[11], p[13], pMidHip)
+#     RShoulderPitch, RShoulderRoll = keypointsToAngles.obtain_RShoulderPitchRoll_angles(pNeck, p[12], p[14], pMidHip)
     
-    LElbowYaw, LElbowRoll = keypointsToAngles.obtain_LElbowYawRoll_angle(pNeck, p[11], p[13], p[15])
-    RElbowYaw, RElbowRoll = keypointsToAngles.obtain_RElbowYawRoll_angle(pNeck, p[12], p[14], p[16])
+#     LElbowYaw, LElbowRoll = keypointsToAngles.obtain_LElbowYawRoll_angle(pNeck, p[11], p[13], p[15])
+#     RElbowYaw, RElbowRoll = keypointsToAngles.obtain_RElbowYawRoll_angle(pNeck, p[12], p[14], p[16])
 
-    HipPitch = keypointsToAngles.obtain_HipPitch_angles(pMidHip, pNeck) # This is switched, why?
-    # angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
+#     HipPitch = keypointsToAngles.obtain_HipPitch_angles(pMidHip, pNeck) # This is switched, why?
+#     # angles = [LShoulderPitch,LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch,RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch]
     
 
-    # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
-    # angle_trace.append(angles)
+#     # print(LShoulderPitch*180/np.pi, LShoulderRoll*180/np.pi)
+#     # angle_trace.append(angles)
 
-    if (checkLim(LShoulderPitch, limitsLShoulderPitch) or 
-        checkLim(RShoulderPitch, limitsRShoulderPitch) or
-        checkLim(LShoulderRoll, limitsLShoulderRoll) or 
-        checkLim(RShoulderRoll, limitsRShoulderRoll) or
-        checkLim(LElbowYaw, limitsLElbowYaw) or 
-        checkLim(RElbowYaw, limitsRElbowYaw) or
-        checkLim(LElbowRoll, limitsLElbowRoll) or 
-        checkLim(RElbowRoll, limitsRElbowRoll)):
-        return False
-    else:
-        return True
+#     if (checkLim(LShoulderPitch, limitsLShoulderPitch) or 
+#         checkLim(RShoulderPitch, limitsRShoulderPitch) or
+#         checkLim(LShoulderRoll, limitsLShoulderRoll) or 
+#         checkLim(RShoulderRoll, limitsRShoulderRoll) or
+#         checkLim(LElbowYaw, limitsLElbowYaw) or 
+#         checkLim(RElbowYaw, limitsRElbowYaw) or
+#         checkLim(LElbowRoll, limitsLElbowRoll) or 
+#         checkLim(RElbowRoll, limitsRElbowRoll)):
+#         return False
+#     else:
+#         return True
+
+def rotationMatrixToEulerAngles(R) :
+
+    #assert(isRotationMatrix(R))
+ 
+    #To prevent the Gimbal Lock it is possible to use
+    #a threshold of 1e-6 for discrimination
+    sy = math.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0])
+    singular = sy < 1e-6
+
+    if  not singular :
+        x = math.atan2(R[2,1] , R[2,2]) 
+        y = math.atan2(-R[2,0], sy)
+        z = math.atan2(R[1,0], R[0,0])
+    else :
+        x = math.atan2(-R[1,2], R[1,1]) 
+        y = math.atan2(-R[2,0], sy)
+        z = 0
+
+    return np.array([x, y, z])
 
 def main():
     args = get_args()
@@ -202,6 +251,15 @@ def main():
     lHand_closed = False
     rHand_opened = False
     lHand_opened = False
+    euler_angles = [0.0, 0.0]
+    
+    pcf = PCF(
+        near=1,
+        far=10000,
+        frame_height=frame_height,
+        frame_width=frame_width,
+        fy=camera_matrix[1, 1],
+    )
     
     try:
         while True:
@@ -234,10 +292,10 @@ def main():
                 mp_drawing.draw_landmarks(debug_image,
                                             results.right_hand_landmarks,
                                             mp_holistic.HAND_CONNECTIONS, 
-                                            mp_drawing.DrawingSpec(color=dark_blue,
+                                            mp_drawing.DrawingSpec(color=dark_orange,
                                                                     thickness=2,
                                                                     circle_radius=4),
-                                            mp_drawing.DrawingSpec(color=blue,
+                                            mp_drawing.DrawingSpec(color=orange,
                                                                     thickness=2,
                                                                     circle_radius=2),
                                             )
@@ -255,10 +313,10 @@ def main():
                 mp_drawing.draw_landmarks(debug_image,
                                             results.left_hand_landmarks,
                                             mp_holistic.HAND_CONNECTIONS, 
-                                            mp_drawing.DrawingSpec(color=dark_orange,
+                                            mp_drawing.DrawingSpec(color=dark_blue,
                                                                     thickness=2,
                                                                     circle_radius=4),
-                                            mp_drawing.DrawingSpec(color=orange,
+                                            mp_drawing.DrawingSpec(color=blue,
                                                                     thickness=2,
                                                                     circle_radius=2),)
 
@@ -270,6 +328,57 @@ def main():
                                         cap_width,
                                         cap_height)
             
+            if results.face_landmarks:
+                face_landmarks = results.face_landmarks
+                landmarks = np.array(
+                    [(lm.x, lm.y, lm.z) for lm in face_landmarks.landmark]
+                )
+                landmarks = landmarks.T
+
+                metric_landmarks, pose_transform_mat = get_metric_landmarks(
+                    landmarks.copy(), pcf
+                )
+
+                image_points = (
+                    landmarks[0:2, points_idx].T
+                    * np.array([frame_width, frame_height])[None, :]
+                )
+                model_points = metric_landmarks[0:3, points_idx].T
+
+                # see here:
+                # https://github.com/google/mediapipe/issues/1379#issuecomment-752534379
+                pose_transform_mat[1:3, :] = -pose_transform_mat[1:3, :]
+                mp_rotation_vector, _ = cv.Rodrigues(pose_transform_mat[:3, :3])
+                mp_translation_vector = pose_transform_mat[:3, 3, None]
+
+                euler_angles = rotationMatrixToEulerAngles(-pose_transform_mat[:3, :3])
+                
+                # print("Euler: ", euler_angles[:2])  
+                
+                # for face_landmarks in face_landmarks:
+                # mp_drawing.draw_landmarks(
+                #     image=debug_image,
+                #     landmark_list=face_landmarks,
+                #     connections=mp_face_mesh.FACEMESH_CONTOURS,
+                #     landmark_drawing_spec=drawing_spec,
+                #     connection_drawing_spec=drawing_spec,
+                # )
+
+                nose_tip = model_points[0]
+                nose_tip_extended = 2.5 * model_points[0]
+                (nose_pointer2D, jacobian) = cv.projectPoints(
+                    np.array([nose_tip, nose_tip_extended]),
+                    mp_rotation_vector,
+                    mp_translation_vector,
+                    camera_matrix,
+                    dist_coeff,
+                ) 
+                
+                nose_tip_2D, nose_tip_2D_extended = nose_pointer2D.squeeze().astype(int)
+                debug_image = cv.line(
+                    debug_image, nose_tip_2D, nose_tip_2D_extended, (0, 255, 0), 4
+                )
+            
             # if plot_world_landmark:
             #     if results.pose_world_landmarks is not None:
             #         plot_world_landmarks(plt, ax, results.pose_world_landmarks)
@@ -277,13 +386,14 @@ def main():
             if results.pose_world_landmarks is not None:
                 cv.putText(debug_image, "TRACKING", (10, 90),
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
-                if not do_teleop(results.pose_world_landmarks):
-                    # limit reached
-                    cv.putText(debug_image, "LIMIT", (10, 140),
-                        cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
+                
+                # if not do_teleop(results.pose_world_landmarks):
+                #     # limit reached
+                #     cv.putText(debug_image, "LIMIT", (10, 140),
+                #         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, cv.LINE_AA)
 
                 if enable_teleop:
-                    socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened)
+                    socket_stream_landmarks(ss, results.pose_world_landmarks, rHand_closed, lHand_closed, rHand_opened, lHand_opened, euler_angles)
 
             cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
                     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 145, 255), 2, cv.LINE_AA)
@@ -297,6 +407,7 @@ def main():
 
             # if (len(video)>0):
             sleep(max(1./fps - (time() - start), 0))
+            
     except KeyboardInterrupt:
         cap.release()
         cv.destroyAllWindows()

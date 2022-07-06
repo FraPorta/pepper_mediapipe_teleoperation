@@ -25,12 +25,10 @@ Project:     CARESSES (http://caressesrobot.org/en/)
 
 from threading import Thread
 import time
-# import numpy
-# import math
+
 import os
 import json
 import logging
-# import cv2
 
 log_dud = logging.getLogger('DetectUserDepth')
 

@@ -162,7 +162,8 @@ class KeypointsToAngles:
         except ValueError:
             RShoulderRoll = np.pi/2
         # RShoulderRoll =  np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - (np.pi/2) # Left-right arm inverted
-
+        
+        # print(RShoulderPitch*180/np.pi)
         # Return RShoulder angles
         return RShoulderPitch, RShoulderRoll
 

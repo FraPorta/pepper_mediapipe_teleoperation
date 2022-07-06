@@ -1,4 +1,8 @@
+from concurrent.futures import process
+from tkinter import DISABLED
+from tkinter.font import NORMAL
 import Tkinter as tk
+
 # import ttk
 # import argparse
 import qi
@@ -14,6 +18,7 @@ from GUI_material.image_label import ImageLabel
 from utils.speech_thread import SpeechThread
 from utils.ok_pepper_thread import OkPepperThread
 from utils.pepper_approach_control_thread import PepperApproachControl
+from utils.skype_call import *
 from Queue import Queue
 
 
@@ -34,8 +39,9 @@ class PepperGui:
         self.session = session
         
         self.teleop = tk.IntVar(value=1)
-        self.save_data = tk.IntVar(value=0)
+        self.save_data = tk.IntVar(value=1)
         self.approach = tk.IntVar()
+        self.head_control = tk.IntVar(value=1)
         
         # Instantiate queue and class for speech recognition
         self.q_speech = Queue()
@@ -46,6 +52,10 @@ class PepperGui:
         
         self.q_pepper = Queue()
         self.q_appr_teleop = Queue()
+        
+        self.q_head = Queue()
+        # self.q_head.put(self.head_control.get())
+        
         self.st = None
         self.pac = None
         
@@ -65,6 +75,9 @@ class PepperGui:
         darkest_red = '#52373b' 
         light_red = '#eb9ea0'
         orange = '#ec5633'
+        skype_blue = '#00aff0'
+        skype_dark_blue = '#015270'
+        grey = '#ccb3b1'
 
         # Master init
         self.master.title("Pepper Control")
@@ -136,6 +149,23 @@ class PepperGui:
         self.btn_connect.pack()
         self.btn_connect.place(relx=0.4, y=448)
         
+        # Button Skype call
+        self.btn_skype = tk.Button( self.master, 
+                                    text="Skype call",
+                                    bg=skype_blue,
+                                    fg='white',
+                                    font=(font, btn_txt_size),
+                                    activebackground=skype_dark_blue,
+                                    activeforeground='white',
+                                    width=10,
+                                    height=2,
+                                    disabledforeground="white",
+                                    anchor=tk.CENTER,
+                                    relief=tk.FLAT,
+                                    command=run_skype_thread)        
+        self.btn_skype.pack()
+        self.btn_skype.place(relx=0.1, y=448)
+        
         # Gifs
         self.gif = ImageLabel(self.master)
         self.gif.config(relief="flat", borderwidth=0)
@@ -156,7 +186,7 @@ class PepperGui:
                               fg='white',
                               font=(font,12,'bold'))
         self.txt_1.place(x=350, y=50)
-        self.txt_1.configure(text="Recognized text")
+        self.txt_1.configure(text="Recognized text / command")
         
         self.txt = tk.Label(self.master,
                             bg=dark_red,
@@ -216,7 +246,8 @@ class PepperGui:
                                          activebackground=red,
                                          highlightthickness=0,
                                          bd=0,
-                                         activeforeground='white')
+                                         activeforeground='white',
+                                         disabledforeground=grey)
         self.c_approach.place(x=80, y=y)
         
         self.c_save = tk.Checkbutton(self.master,
@@ -230,7 +261,7 @@ class PepperGui:
                                        selectcolor=light_red,
                                        activebackground=light_red,
                                        activeforeground='white',
-                                       disabledforeground='white',
+                                       disabledforeground=grey,
                                        highlightthickness=0,
                                        bd=0,
                                        relief=tk.FLAT,
@@ -238,6 +269,27 @@ class PepperGui:
                                     #    state=tk.DISABLED
                                        )
         self.c_save.place(x=80, y=y+30)
+        
+        self.c_head = tk.Checkbutton(self.master,
+                                       text = "Head Control",
+                                       variable = self.head_control,
+                                       onvalue = 1, 
+                                       offvalue = 0,
+                                       font=(font,12), 
+                                       bg=red,
+                                       fg='white',
+                                       selectcolor=light_red,
+                                       activebackground=light_red,
+                                       activeforeground='white',
+                                       disabledforeground='white',
+                                       highlightthickness=0,
+                                       bd=0,
+                                       relief=tk.FLAT,
+                                       indicatoron=True,
+                                       command=self.head_control_callback
+                                    #    state=tk.DISABLED
+                                       )
+        self.c_head.place(x=80, y=y+150)
         
         # Entries
         self.text_ip = tk.Entry(self.master,
@@ -326,7 +378,13 @@ class PepperGui:
         self.lbl_hints6.place(x=650, y=412+110)
         # self.lbl_hints6.configure(text="'stop  tracking / focus'") 
         
-    
+    def head_control_callback(self):
+        if self.head_control.get() == 1:
+            self.q_head.put(True)
+        else:
+            self.q_head.put(False)
+            
+            
     def show_hints(self):
         self.lbl_hints.configure(text="Commands:") 
         
@@ -405,6 +463,11 @@ class PepperGui:
         show_plot = self.save_data.get()
         gif_path = resource_path('GUI_material/load_white.gif')
         
+        self.c_approach.configure(state=DISABLED)
+        self.c_save.configure(state=DISABLED)
+        
+        self.head_control_callback()
+        
         if self.approach.get() == 1 and self.teleop.get() == 1:
             # Show gif
             self.gif_load = ImageLabel(self.master)
@@ -416,7 +479,14 @@ class PepperGui:
             approach_requested = True
             approach_only = False
             
-            self.pac = PepperApproachControl(self.session, show_plot, approach_requested, approach_only, self.q_pepper, self.q_appr_teleop)
+            self.pac = PepperApproachControl(self.session,
+                                             show_plot,
+                                             approach_requested,
+                                             approach_only,
+                                             self.q_pepper,
+                                             self.q_appr_teleop,
+                                             self.q_head
+                                            )
             self.pac.start()
             
             # Change button text and command
@@ -433,7 +503,15 @@ class PepperGui:
             approach_requested = False
             approach_only = False
             
-            self.pac = PepperApproachControl(self.session, show_plot, approach_requested, approach_only, self.q_pepper, self.q_appr_teleop)
+            self.pac = PepperApproachControl(self.session,
+                                             show_plot,
+                                             approach_requested,
+                                             approach_only,
+                                             self.q_pepper, 
+                                             self.q_appr_teleop,
+                                             self.q_head
+                                            )
+
             self.pac.start()
             
             # Change button text and command
@@ -450,7 +528,14 @@ class PepperGui:
             approach_requested = True
             approach_only = True
             
-            self.pac = PepperApproachControl(self.session, show_plot, approach_requested, approach_only, self.q_pepper, self.q_appr_teleop)
+            self.pac = PepperApproachControl(self.session,
+                                             show_plot,
+                                             approach_requested,
+                                             approach_only,
+                                             self.q_pepper,
+                                             self.q_appr_teleop,
+                                             self.q_head
+                                            )
             self.pac.start()
             
             # Change button text and command
@@ -472,6 +557,9 @@ class PepperGui:
         self.gif_load.pack()
         self.gif_load.place(x=257, y=240)
         self.gif_load.load(gif_path)
+        
+        self.c_approach.configure(state=NORMAL)
+        self.c_save.configure(state=NORMAL)
         
         # Change button text and command
         self.btn_pepper.configure(text="Start Moving", command=self.start_pepper)
@@ -522,7 +610,8 @@ class PepperGui:
     #
     #  Stop speech recognition thread and close the window
     def on_closing(self):
-        os.kill(self.p_mediapipe.pid, signal.CTRL_BREAK_EVENT)
+        if self.p_mediapipe:
+            os.kill(self.p_mediapipe.pid, signal.CTRL_BREAK_EVENT)
         
         # Stop the two Speech Recognition Threads
         self.q_record.put("StopRun")
@@ -593,11 +682,19 @@ class PepperGui:
                     self.btn_pepper.invoke()
                 elif command == 'start pepper' and self.btn_pepper.cget('text') == "Start Moving":
                     self.btn_pepper.invoke()
+                elif command == 'call':
+                    self.btn_skype.invoke()
+                elif command == 'stop head':
+                    if self.head_control.get() == 1:
+                        self.c_head.invoke()
+                elif command == 'head control':
+                    self.c_head.invoke()
                     
         self.master.after(250, func=self.check_queues)
     
 def init_mediapipe():
-    script = resource_path("teleop_holistic/teleop_holistic.exe")
+    # script = resource_path("teleop_holistic/teleop_holistic.exe")
+    script = resource_path("teleop_holistic/teleop_holistic_head.exe")
     process = subprocess.Popen(script)
     return process
 
@@ -614,6 +711,7 @@ def resource_path(relative_path):
 
 if __name__ == '__main__':
     process = init_mediapipe()
+    # process = None
     
     # Start naoqi session
     session = qi.Session()

@@ -26,7 +26,8 @@ PREFERRED_PHRASES = ['stop talking', 'start talking', 'start moving', 'stop movi
                      'look right', 'watch left', 'look left', 'watch up', 
                      'look up', 'watch down', 'look down', 'watch ahead', 
                      'look ahead', 'track arm', 'follow arm', 'stop tracking',
-                     'stop following', "track user", 'stop focus']
+                     'stop following', "track user", 'stop focus', 'call',
+                     'skype call', 'skype', 'head control']
 
 class SpeechThread(Thread):
     def __init__(self, session, q, q_rec, q_button):
@@ -152,6 +153,7 @@ class SpeechThread(Thread):
                             self.q_button.put('stop pepper') 
                         
                         elif 'watch right' in txt or 'look right' in txt or 'look to the right' in txt:
+                            self.q_button.put('stop head')
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -167,8 +169,10 @@ class SpeechThread(Thread):
                             names = ['HeadYaw']
                             angles = [-angle]
                             self.motion.setAngles(names, angles, 0.15)   
+                            
                               
                         elif 'watch left' in txt or 'look left' in txt or 'look to the left' in txt:
+                            self.q_button.put('stop head')
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -184,7 +188,9 @@ class SpeechThread(Thread):
                             angles = [angle]
                             self.motion.setAngles(names, angles, 0.15)   
                             
+                            
                         elif 'watch up' in txt or 'look up' in txt:
+                            self.q_button.put('stop head')
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -199,9 +205,12 @@ class SpeechThread(Thread):
                             # self.motion.setStiffnesses("HeadPitch", 1)
                             names = ['HeadPitch']
                             angles = [-angle/2]
-                            self.motion.setAngles(names, angles, 0.15)    
+                            self.motion.setAngles(names, angles, 0.15) 
+                               
                             
                         elif 'watch down' in txt or 'look down' in txt:
+                            self.q_button.put('stop head')
+                            
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -215,10 +224,12 @@ class SpeechThread(Thread):
                             # self.motion.setStiffnesses("HeadPitch", 1)
                             names = ['HeadPitch']
                             angles = [angle/2]
-                            self.motion.setAngles(names, angles, 0.15)    
+                            self.motion.setAngles(names, angles, 0.15) 
+                               
                         
                         elif 'watch ahead' in txt or 'look ahead' in txt or\
                              'look forward' in txt or 'watch forward' in txt:
+                            self.q_button.put('stop head')
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
                             # stop arm tracking
@@ -233,9 +244,11 @@ class SpeechThread(Thread):
                             self.motion.setStiffnesses("HeadYaw", 1)
                             names = ['HeadYaw', 'HeadPitch']
                             angles = [0, 0]
-                            self.motion.setAngles(names, angles, 0.15)    
+                            self.motion.setAngles(names, angles, 0.15)  
+                             
                             
                         elif 'track arm' in txt or 'follow arm' in txt or 'truck arm' in txt:
+                            self.q_button.put('stop head')
                             self.text = "follow arm"
                             self.life_service.stopAll()
                             # self.life_service.setState('disabled')
@@ -244,18 +257,26 @@ class SpeechThread(Thread):
                             if not self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.set()
                             
+                            
                         elif 'stop tracking' in txt or 'stop following' in txt or\
                              'stop arm tracking' in txt or 'stop arm following' in txt:
                             if self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.clear()
                             
                         elif 'track user' in txt or 'truck user' in txt:
+                            self.q_button.put('stop head')
                             if self.arm_tracking_event.is_set():
                                 self.arm_tracking_event.clear()
                             self.life_service.setAutonomousAbilityEnabled("BasicAwareness", True)
                             
                         elif 'stop focus' in txt:
                             self.life_service.stopAll()
+                            
+                        elif 'call' in txt or 'skype call' in txt or 'skype' in txt:
+                            self.q_button.put('call')
+                        
+                        elif 'head control' in txt:
+                            self.q_button.put('head control')
                         else:
                             if self.session.isConnected():
                                 # Repeat the recognized text

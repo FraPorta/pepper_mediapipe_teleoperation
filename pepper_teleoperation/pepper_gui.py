@@ -2,7 +2,7 @@ from concurrent.futures import process
 from tkinter import DISABLED
 from tkinter.font import NORMAL
 import Tkinter as tk
-from setuptools import Command
+
 # import ttk
 # import argparse
 import qi
@@ -710,8 +710,9 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    # process = init_mediapipe()
-    process = None
+    process = init_mediapipe()
+    # process = None
+    
     # Start naoqi session
     session = qi.Session()
     

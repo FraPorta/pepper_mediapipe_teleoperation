@@ -1,9 +1,7 @@
 # -*- encoding: UTF-8 -*-
 
-from multiprocessing import Event
 from Queue import Queue
 import qi
-from naoqi import ALProxy
 import os
 import argparse
 import sys
@@ -11,15 +9,14 @@ import time
 import csv
 import numpy as np
 from scipy import signal
-# import matplotlib.pyplot as plt
-from threading import Thread
+from threading import Thread, Event
 from datetime import datetime
 
 # local imports
 from keypoints_to_angles import KeypointsToAngles 
 from sensory_hub import DetectUserDepth, Person
 from approach_user_thread import ApproachUser
-from socket_send import SocketSendSignal
+# from socket_send import SocketSendSignal
 from repeat_head_commands import RepeatHeadCommands
 
 ## class PepperApproachControl
@@ -553,12 +550,11 @@ class PepperApproachControl(Thread):
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     # Upper body control
-                    # motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
+                    motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
                     
                     # Head control
                     if self.head_control:
                         # motion_service.setAngles(names[-2:], angles[-2:], 0.1)
-                        # print("apprContr New Angles", angles[-2:], time.time())
                         self.q_commands_repeat.put(angles[-2:])
                         
                 # Close or open hands
@@ -633,10 +629,6 @@ class PepperApproachControl(Thread):
             posture_service.goToPosture("StandInit", 0.5)
         except RuntimeError as e:
             print(e)
-            
-         
-        # signal to Openpose to stop saving keypoints
-        # self.sock_send.send('Stop')
                
         # show plots of the joints angles
         if self.show_plot:
@@ -661,9 +653,6 @@ class PepperApproachControl(Thread):
             with open(path + '/timestamps_end_loop.csv', 'w') as f: 
                 write = csv.writer(f) 
                 write.writerow(timestamp_arr_end) 
-            
-            # self.sock_send.close()
-            # print("PepperApproachControl thread terminated correctly")
             
 # Main 
 if __name__ == "__main__":

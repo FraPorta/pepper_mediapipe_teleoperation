@@ -335,7 +335,7 @@ class KeypointsToAngles:
         else:
             HipPitch = omega_HP_module - np.pi - correction
         
-        return HipPitch
+        return -HipPitch
     
     
     ##  function invert_right_left

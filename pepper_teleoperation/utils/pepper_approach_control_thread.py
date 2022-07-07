@@ -1,5 +1,6 @@
 # -*- encoding: UTF-8 -*-
 
+import math
 from Queue import Queue
 import qi
 import os
@@ -111,7 +112,7 @@ class PepperApproachControl(Thread):
     ##  function saturate_angles
     #
     #   Saturate angles before using them for controlling Pepper joints
-    def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HEY, HEP):
+    def saturate_angles(self, mProxy, LSP, LSR, LEY, LER, RSP, RSR, REY, RER, HEY, HEP, HP):
         # global LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
         # limit percentage for some angles 
         limit = 0.9
@@ -209,14 +210,14 @@ class PepperApproachControl(Thread):
         elif HEP > 0.4451:
             self.HeadPitch = 0.4451
 
-        # # HipPitch saturation: -1.0385 to 1.0385
-        # if HP is None:
-        #     # HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
-        #     self.HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value")
-        # elif HP < -1.0385:
-        #     self.HipPitch = -1.0385
-        # elif HP > 1.0385:
-        #     self.HipPitch = 1.0385
+        # HipPitch saturation: -1.0385 to 1.0385
+        if HP is None:
+            # HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Actuator/Value")
+            self.HipPitch = mProxy.getData("Device/SubDeviceList/HipPitch/Position/Sensor/Value")
+        elif HP < -1.0385:
+            self.HipPitch = -1.0385
+        elif HP > 1.0385:
+            self.HipPitch = 1.0385
         
 
     ##  function save_data
@@ -358,8 +359,8 @@ class PepperApproachControl(Thread):
         z_HEY = signal.lfilter_zi(b_H, a_H)  
         z_HEP = signal.lfilter_zi(b_H, a_H)  
         
-        # b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
-        # z_HP = signal.lfilter_zi(b_HP, a_HP)   
+        b_HP, a_HP = signal.butter(order, cutoff/nyq, btype='low', analog=False, output='ba') 
+        z_HP = signal.lfilter_zi(b_HP, a_HP)   
         
         # Initialize arrays to store angles for plots
         # Left arm
@@ -399,9 +400,9 @@ class PepperApproachControl(Thread):
         HEP_arr_robot = []
         
         # Hip
-        # HP_arr = []
-        # HP_arr_filt = []
-        # HP_arr_robot = []
+        HP_arr = []
+        HP_arr_filt = []
+        HP_arr_robot = []
         
         time_arr = []
         timestamp_arr_start = []
@@ -418,7 +419,7 @@ class PepperApproachControl(Thread):
         # All joints
         names = ["LShoulderPitch","LShoulderRoll", "LElbowYaw", "LElbowRoll", \
                  "RShoulderPitch","RShoulderRoll", "RElbowYaw", "RElbowRoll", \
-                 "HeadYaw", "HeadPitch"]
+                 "HipPitch", "HeadYaw", "HeadPitch"]
         
         # Speed limits for the joints
         fractionMaxSpeed = 0.5
@@ -483,7 +484,7 @@ class PepperApproachControl(Thread):
                 # Saturate angles to avoid exceding Pepper limits
                 self.saturate_angles(memProxy, self.LShoulderPitch, self.LShoulderRoll, self.LElbowYaw, self.LElbowRoll,\
                                                self.RShoulderPitch, self.RShoulderRoll, self.RElbowYaw, self.RElbowRoll,\
-                                               self.HeadYaw, self.HeadPitch)
+                                               self.HeadYaw, self.HeadPitch, self.HipPitch)
   
                 # Store raw angles lists for plots
                 if self.show_plot: # and self.time_elapsed > 2.0:
@@ -499,7 +500,7 @@ class PepperApproachControl(Thread):
 
                     HEY_arr.append(self.HeadYaw)
                     HEP_arr.append(self.HeadPitch)
-                    # HP_arr.append(self.HipPitch)
+                    HP_arr.append(self.HipPitch)
                 
                 ### REAL-TIME DATA FILTERING ###
                 # Filter data with Butterworth filter
@@ -516,7 +517,7 @@ class PepperApproachControl(Thread):
                 self.HeadYaw, z_HEY = signal.lfilter(b_H, a_H, [self.HeadYaw], zi=z_HEY)
                 self.HeadPitch, z_HEP = signal.lfilter(b_H, a_H, [self.HeadPitch], zi=z_HEP)
                 
-                # self.HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [self.HipPitch], zi=z_HP)
+                self.HipPitch, z_HP = signal.lfilter(b_HP, a_HP, [self.HipPitch], zi=z_HP)
                 
                 # Store filtered angles for plots
                 if self.show_plot: # and self.time_elapsed > 2.0:
@@ -532,7 +533,7 @@ class PepperApproachControl(Thread):
                     
                     HEY_arr_filt.append(self.HeadYaw)
                     HEP_arr_filt.append(self.HeadPitch)
-                    # HP_arr_filt.append(self.HipPitch[0])
+                    HP_arr_filt.append(self.HipPitch[0])
                 
                 # Get hands state 
                 RHand_close = wp_dict.get('9')
@@ -544,14 +545,15 @@ class PepperApproachControl(Thread):
                 # Control angles list 
                 angles = [float(self.LShoulderPitch), float(self.LShoulderRoll), float(self.LElbowYaw), float(self.LElbowRoll), \
                           float(self.RShoulderPitch), float(self.RShoulderRoll), float(self.RElbowYaw), float(self.RElbowRoll), \
-                          float(self.HeadYaw), float(self.HeadPitch)
+                          float(self.HipPitch), float(self.HeadYaw), float(self.HeadPitch)
                          ]
                 # print(self.RShoulderPitch*180/np.pi)
                 ## Send control commands to the robot if 2 seconds have passed (Butterworth Filter initialization time) ##
                 if self.time_elapsed > 2.0:
                     # Upper body control
                     motion_service.setAngles(names[:-2], angles[:-2], fractionMaxSpeed)
-                    
+                    # print(math.degrees(-self.HipPitch))
+                    # motion_service.setAngles("HipPitch", float(-self.HipPitch), fractionMaxSpeed)
                     # Head control
                     if self.head_control:
                         # motion_service.setAngles(names[-2:], angles[-2:], 0.1)

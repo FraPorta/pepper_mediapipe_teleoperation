@@ -1,4 +1,4 @@
-# Pepper Teleoperation using OpenPose
+# Pepper Teleoperation using Mediapipe
 ## Description
 This repository contains the python code to use the Softbank Robotics Humanoid Robot Pepper to approach a user and then be teleoperated by an operator using Mediapipe for human pose estimation through the webcam. From the 3D keypoints the joint angles are calculated and used as control input for the robot motors. A real-time butterworth filter is used for smoothing the control signals.
 

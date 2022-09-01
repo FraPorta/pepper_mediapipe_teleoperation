@@ -45,9 +45,9 @@ class PlotAngles:
     # load and plot data from the specified folder
     def run(self):
         # Loads list of files in the folder
-        files_list = [f for f in os.listdir(self.path) if isfile(join(self.path, f)) and 'data' in f]
+        # files_list = [f for f in os.listdir(self.path) if isfile(join(self.path, f)) and 'data' in f]
         
-        files_list.reverse()
+        # files_list.reverse()
         
         # Create figure with 12 subplots
         fig, axs = plt.subplots(1,1)
@@ -65,13 +65,13 @@ class PlotAngles:
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False, output='ba') 
 
         w, h = signal.freqs(b, a)
-        plt.semilogx(w, 20 * np.log10(abs(h)))
+        plt.semilogx(w, 20 * np.log10(abs(h)), linewidth=4)
         plt.title('Butterworth filter frequency response')
         plt.xlabel('Frequency [radians / second]')
         plt.ylabel('Amplitude [dB]')
         plt.margins(0, 0.1)
         plt.grid(which='both', axis='both')
-        plt.axvline(normal_cutoff, color='green') # cutoff frequency
+        # plt.axvline(normal_cutoff, color='green', linewidth=2) # cutoff frequency
         plt.show()
         
         
@@ -82,15 +82,15 @@ class PlotAngles:
             
         
 if __name__ == '__main__':
-    import argparse
+    # import argparse
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path", type=str, default="17_09_2021_15-28-18__Mario3",
-                        help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--path", type=str, default="17_09_2021_15-28-18__Mario3",
+    #                     help="Insert name of the folder where the angles are stored in a csv file in the 'angles_data' folder")
 
-    args = parser.parse_args()
-    path = "angles_data/" + args.path
-    
+    # args = parser.parse_args()
+    # path = "angles_data/" + args.path
+    path = ""
     pa = PlotAngles(path)
     pa.run()
     

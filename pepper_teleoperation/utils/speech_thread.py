@@ -277,10 +277,10 @@ class SpeechThread(Thread):
                         
                         elif 'head control' in txt:
                             self.q_button.put('head control')
-                        else:
-                            if self.session.isConnected():
-                                # Repeat the recognized text
-                                self.tts.say(self.text)
+                        # else:
+                        #     if self.session.isConnected():
+                        #         # Repeat the recognized text
+                        #         self.tts.say(self.text)
                             
                         # Put text in a queue for the GUI
                         self.q_text.put(self.text) 

@@ -125,13 +125,8 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
     
     wp_dict['8'] = pMidHip # MidHip
     
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     wp_dict['9'] = rHand_closed
     wp_dict['10'] = lHand_closed
-    # wp_dict['9'] = rHand_angle
-    # wp_dict['10'] = lHand_angle
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
     wp_dict['11'] = rHand_opened
     wp_dict['12'] = lHand_opened
     wp_dict['13'] = face_pose[0]

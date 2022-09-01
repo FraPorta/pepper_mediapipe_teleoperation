@@ -10,13 +10,16 @@ There are two main folders in the repository, one for the Mediapipe part in Pyth
 For the first part, create a new conda environment and install requiremnts:
 ```bash
         conda create -n mediapipe_env python=3.7
+        conda activate mediapipe_env
         cd mediapipe_pose
         pip install -r requirements.txt
 ```
 
 For the second part, create another conda environment and install requiremnts:
 ```bash
-        conda create -n mediapipe_env python=2.7
+        set CONDA_FORCE_32BIT=1
+        conda create -n gui_env python=2.7
+        conda activate gui_env
         cd pepper_teleoperation
         pip install -r requirements.txt
 ```
@@ -27,7 +30,7 @@ Create Google Speech API credentials JSON file and copy them in a file called 'c
 ## Run the system
 
 * Pepper real-time teleoperation after finding and approaching the user using GUI and voice controls
-    * Open another terminal using `Python 2.7 32-bit` (see [miniconda2](https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86.exe))
+    * Open a terminal using `Python 2.7 32-bit` environment
     * Run `pepper_gui.py` (in `pepper_teleoperation` folder)
     * Insert the IP of your Pepper robot
     * Connect to the robot pressing the button or saying 'Connect'

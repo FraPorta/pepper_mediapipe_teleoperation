@@ -6,6 +6,23 @@ This repository contains the python code to use the Softbank Robotics Humanoid R
 [Here](https://docs.google.com/document/d/12L8lT-q1PW5xX1jOR3_xbfkzD3iiLps2_0ea9-NWRFs/edit?usp=sharing) you can find a guide for using the GUI.
 
 ## Installation guide
+There are two main folders in the repository, one for the Mediapipe part in Python 3.7, one for the gui and robot control in Python 2.7.
+For the first part, create a new conda environment and install requiremnts:
+```bash
+        conda create -n mediapipe_env python=3.7
+        cd mediapipe_pose
+        pip install -r requirements.txt
+```
+
+For the second part, create another conda environment and install requiremnts:
+```bash
+        conda create -n mediapipe_env python=2.7
+        cd pepper_teleoperation
+        pip install -r requirements.txt
+```
+
+Create Google Speech API credentials JSON file and copy them in a file called 'credentials.py' inside the 'pepper_teleoperation/utils' folder.
+
 
 ## Run the system
 

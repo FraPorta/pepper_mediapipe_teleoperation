@@ -124,6 +124,7 @@ def socket_stream_landmarks(ss, landmarks, rHand_closed, lHand_closed, rHand_ope
     wp_dict['7'] = p[16]   # RWrist
     
     wp_dict['8'] = pMidHip # MidHip
+    
     wp_dict['9'] = rHand_closed
     wp_dict['10'] = lHand_closed
     wp_dict['11'] = rHand_opened
@@ -251,6 +252,8 @@ def main():
     lHand_closed = False
     rHand_opened = False
     lHand_opened = False
+    rHand_angle = 0.0
+    lHand_angle = 0.0
     euler_angles = [0.0, 0.0]
     
     pcf = PCF(
@@ -301,7 +304,7 @@ def main():
                                             )
                 
                 # Draw angles to image from joint list
-                rHand_closed, rHand_opened = hu.draw_finger_angles_3d(debug_image,
+                rHand_closed, rHand_opened, rHand_angle = hu.draw_finger_angles_3d(debug_image,
                                         results.right_hand_landmarks,
                                         hu.joint_list_low,
                                         handedness,
@@ -321,7 +324,7 @@ def main():
                                                                     circle_radius=2),)
 
                 # Draw angles to image from joint list
-                lHand_closed, lHand_opened = hu.draw_finger_angles_3d(debug_image,
+                lHand_closed, lHand_opened, lHand_angle = hu.draw_finger_angles_3d(debug_image,
                                         results.left_hand_landmarks,
                                         hu.joint_list_low,
                                         handedness,

@@ -710,8 +710,9 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    process = init_mediapipe()
-    # process = None
+    
+    process = init_mediapipe()  # Comment if you want to start the medipipe window manually
+    # process = None              # Uncomment if you want to start the medipipe window manually
     
     # Start naoqi session
     session = qi.Session()

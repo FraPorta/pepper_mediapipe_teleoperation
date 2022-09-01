@@ -12,7 +12,8 @@ class HandsUtils(object):
     
     def __init__(self) -> None:
         self.joint_list_up = [[8,7,6], [12,11,10], [16,15,14], [20,19,18], [4,3,2]]
-        self.joint_list_low = [[7,6,5], [11,10,9], [15,14,13], [19,18,17], [3,2,1]]
+        # self.joint_list_low = [[7,6,5], [11,10,9], [15,14,13], [19,18,17], [3,2,1]]
+        self.joint_list_low = [[7,6,5], [11,10,9], [15,14,13], [19,18,17]]
 
     def get_label(self, index, hand, multi_handedness, width, height):
         output = None, None, None
@@ -61,34 +62,48 @@ class HandsUtils(object):
         res = v1norm[0] * v2norm[0] + v1norm[1] * v2norm[1] + v1norm[2] * v2norm[2]
         angle_rad = np.arccos(res)
 
-        return math.degrees(angle_rad)
+        return angle_rad
 
     def draw_finger_angles_3d(self, image, hand, joint_list, rl, width, height):
         # Loop through hands
-        fingers_closed = []
-        fingers_opened = []
+        # fingers_closed = []
+        # fingers_opened = []
+        finger_angles = []
+        
         hand_closed = False
         hand_opened = False
         
+        hand_angle = 0.0
+        # print(joint_list)
         for joint in joint_list:
             a = np.array([hand.landmark[joint[0]].x, hand.landmark[joint[0]].y, hand.landmark[joint[0]].z]) # First coord
             b = np.array([hand.landmark[joint[1]].x, hand.landmark[joint[1]].y, hand.landmark[joint[1]].z]) # Second coord
             c = np.array([hand.landmark[joint[2]].x, hand.landmark[joint[2]].y, hand.landmark[joint[2]].z]) # Third coord
             
             angle = self.calculate_angle_3d(a, b, c)
+            # print(f'{joint}: {math.degrees(angle)}')
             
-            if angle > 180.0:
-                angle = 360-angle
+            if angle > math.pi:
+                angle = (2*math.pi) - angle
             
-            if angle < 120.0:
-                fingers_closed.append(1)
-            if angle > 172.0:
-                fingers_opened.append(1)
-                
-            # cv2.putText(image, str(round(angle, 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
+            # if angle < math.radians(120.0):
+            #     fingers_closed.append(1)
+            # if angle > math.radians(172.0):
+            #     fingers_opened.append(1)
+            
+            finger_angles.append(angle)
+            
+            # cv2.putText(image, str(round(math.degrees(angle), 2)), tuple(np.multiply(b[0:2:], [width, height]).astype(int)),
             #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
-        
-        if len(fingers_closed) > 2:
+        hand_angle = sum(finger_angles)/len(finger_angles)
+        if rl == 'Right':
+                cv2.putText(image, f'{rl}: {math.degrees(hand_angle)}', (width-100, 100),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+        else:
+            cv2.putText(image, f'{rl}: {math.degrees(hand_angle)}', (width-100, 120),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_AA)
+            
+        if hand_angle < math.radians(100.0):
             hand_closed = True
             if rl == 'Right':
                 cv2.putText(image, rl + " closed", (width-100, 20),
@@ -97,7 +112,7 @@ class HandsUtils(object):
                 cv2.putText(image, rl + " closed", (width-100, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         
-        if len(fingers_opened) > 2:
+        if hand_angle > math.radians(169.0):
             hand_opened = True
             if rl == 'Right':
                 cv2.putText(image, rl + " opened", (width-100, 60),
@@ -106,7 +121,7 @@ class HandsUtils(object):
                 cv2.putText(image, rl + " opened", (width-100, 80),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
                 
-        return hand_closed, hand_opened
+        return hand_closed, hand_opened, hand_angle
 
 
 # if __name__ == "__main__":
